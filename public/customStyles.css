@@ -1,0 +1,145 @@
+/* .panel-primary-bg {
+  background-color: #5f8295 !important;
+} */
+
+.panel-heading-div {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+.panel-heading-button {
+  float: right !important;
+}
+
+.panel-heading-text {
+  margin: 10px !important;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Works for Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+label.required::after {
+  content: "*";
+  color: red;
+  position: relative;
+  left: 3px;
+  top: 2px;
+}
+
+#tblPlanLocationMappingConfidDetail th:nth-child(1) {
+  z-index: auto !important;
+}
+
+/* old crm rights styles start */
+
+.mega-menu-container {
+  position: absolute;
+  width: 100%;
+  background-color: white;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.63);
+  border-radius: 5px;
+  max-height: 600px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.mega-menu-container:focus {
+  outline: none;
+}
+
+.mega-menu-container.no-rights {
+  width: 230px;
+}
+
+.mega-sub-menu .mega-menu-sub-title {
+  color: black;
+  border-bottom: 1px solid #212121;
+  display: block;
+  font-size: 12px;
+  padding: 5px 0px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.mega-sub-menu {
+  padding-right: 15px;
+}
+
+.mega-sub-menu-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  max-height: 200px;
+
+  /* For Chrome, Safari, and newer Edge */
+  &::-webkit-scrollbar {
+    width: 2px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  /* For Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+.reload-btn {
+  background-color: #d1fae5; /* green-100 */
+  border: none;
+  border-radius: 50%;
+  padding: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  line-height: 20px;
+}
+
+.reload-btn:hover {
+  background-color: #a7f3d0; /* green-200 */
+}
+
+.reload-btn:active {
+  background-color: #6ee7b7; /* green-300 */
+}
+
+.reload-btn i {
+  color: #047857; /* green-700 */
+  font-size: 1.1rem;
+}
+
+/* old crm rights styles end */
+
+img.general_error {
+  width: 440px;
+  height: 540px;
+  position: relative;
+  top: -60px;
+  left: 20px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+  /* padding-left: 0.3rem !important;
+  padding-right: 0.3rem !important; */
+}

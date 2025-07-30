@@ -1,0 +1,120 @@
+
+import DashletHeading from './dashletHeading';
+import Image from "next/image";
+import Copy from "../../public/dist/img/Copy.svg"
+const SprintDetailDashlet = () => {
+    return (
+        <div className='row mx-0' style={{ boxShadow: " rgba(0, 0, 0, 8%) 0px 3px 8px"}}>
+            <div className='col-sm-12 col-md-12 px-0'>
+            <div className="mb-3">
+                <DashletHeading heading='Sprint Details' bgColor='#284E93'/>
+                <div className="table-wrap mt-4 px-4">
+                    <div className="table-responsive rounded-top">
+                        <table className="table">
+                            <thead style={{ backgroundColor: '#E3E8F1' }}>
+                                <tr>
+                                    <th className="text- text-left px-2 py-2 font-15" style={{ backgroundColor: '#E3E8F1' }}>Assignee</th>
+                                    <th className="text-dark text-left px-2 py-2 font-15">Blocker</th>
+                                    <th className="text-dark text-left px-2 py-2 font-15">Critical</th>
+                                    <th className="text-dark text-left px-2 py-2 font-15">Medium</th>
+                                    <th className="text-dark text-left px-2 py-2 font-15">Review</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style={{ background: "#FBFBFB" }}>
+                                    <td className="font-13 text-secondary weight-400 pl-2 pr-2 py-1 cap" style={{ background: "#FBFBFB" }}>103</td>
+                                    <td className="font-13 text-secondary weight-400 pl-2 pr-2 py-1 cap">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</td>
+                                    <td className="font-13 text-secondary weight-400 pl-2 pr-2 py-1 cap">Hamza Khan</td>
+                                    <td className="font-13 text-secondary weight-400 pl-2 pr-2 py-1 cap">12/12/2023</td>
+                                    <td className="font-13 text-secondary weight-400 pl-2 pr-2 py-1 cap text-center">
+                                        <a className="btn bg-light text-primary p-0">
+                                            {/* <i className="fa fa-copy"></i> */}
+                                            <Image src={Copy}></Image>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr style={{ background: "#FBFBFB" }}>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap" style={{ background: "#FBFBFB" }}>103</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Gorem ipsum dolor sit amet, consectetur adipiscing elit.</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Hamza Khan</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">12/12/2023</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap text-center">
+                                        <a className="text-primary p-0">
+                                        <Image src={Copy}></Image>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr style={{ background: "#FBFBFB" }}>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap" style={{ background: "#FBFBFB" }}>103</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Gorem ipsum dolor sit amet, consectetur adipiscing elit.</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Hamza Khan</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">12/12/2023</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap text-center">
+                                        <a className="text-primary p-0">
+                                        <Image src={Copy}></Image>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr style={{ background: "#FBFBFB" }}>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap" style={{ background: "#FBFBFB" }}>103</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Gorem ipsum dolor sit amet, consectetur adipiscing elit.</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Hamza Khan</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">12/12/2023</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap text-center">
+                                        <a className="text-primary p-0">
+                                        <Image src={Copy}></Image>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr style={{ background: "#FBFBFB" }}>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap" style={{ background: "#FBFBFB" }}>103</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Gorem ipsum dolor sit amet, consectetur adipiscing elit.</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Hamza Khan</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">12/12/2023</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap text-center">
+                                        <a className="text-primary p-0">
+                                        <Image src={Copy}></Image>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr style={{ background: "#FBFBFB" }}>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap" style={{ background: "#FBFBFB" }}>103</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Gorem ipsum dolor sit amet, consectetur adipiscing elit.</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">Hamza Khan</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap">12/12/2023</td>
+                                    <td className="font-14 text-secondary weight-400 pl-2 pr-2 py-1 cap text-center">
+                                        <a className="text-primary p-0">
+                                        <Image src={Copy}></Image>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div className="mt-10 px-4 pb-3">
+                <span className="font-14 d-inline-block mb-2">
+                    Page 1 of 10
+                </span>
+                <span style={{ float: "right" }}>
+                    <button
+                        style={{ marginLeft: "5px", fontSize:"14px" }}
+                        className="btn btn-default bg-white text-dark border-secondary py-1 px-3"
+                    >
+                        Previous
+                    </button>
+                    <button
+                        style={{ marginLeft: "5px",fontSize:"14px" }}
+                        className="btn btn-default custom-bg-color text-white py-1 px-4"
+                    >
+                        Next
+                    </button>
+                </span>
+            </div>
+            </div>
+        </div>
+    )
+}
+
+export default SprintDetailDashlet;
