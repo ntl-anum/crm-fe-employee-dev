@@ -1,11 +1,9 @@
-import { initializeClauseFunctions } from "@/helpers/clause-utils";
+import AddClause from "@/helpers/AddClause";
 import { useEffect, useState } from 'react';
 
-export default function Service2({ formData, setFormData, onNext, onPrev,formType }) {
+export default function Service2({ formData, setFormData, onNext, onPrev,formType, clauses, addClause, deleteClause, updateClause }) {
 
-  useEffect(() => {
-    initializeClauseFunctions();
-  }, []);
+
 
   const handleNext = () => onNext && onNext();
   const handlePrev = () => onPrev && onPrev();
@@ -16,42 +14,30 @@ export default function Service2({ formData, setFormData, onNext, onPrev,formTyp
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">7. Locking/Unlocking of Service </h6>
-  <button
-    type="button"
-     className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-    onClick={() => window.addClause('clause-7', true)}
-  >
-    + Add Clause
-  </button>
-
-  <ol id="clause-7" className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
+  <AddClause 
+                clauses={clauses}
+                addClause={addClause}
+                deleteClause={deleteClause}
+                updateClause={updateClause}
+               currentNo={7}
+               sectionName="Locking/Unlocking of Service" // Unique heading identifier
+ 
+            />
 
 </div>
 
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">8. Charging Mechanism (Including MRC, OTC, VAS charges and Taxes)</h6>
-  <button
-    type="button"
-      className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-    onClick={() => window.addClause('clause-8', true)}
-  >
-    + Add Clause
-  </button>
-
-  <ol id="clause-8" className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
+   <AddClause 
+                clauses={clauses}
+                addClause={addClause}
+                deleteClause={deleteClause}
+                updateClause={updateClause}
+               currentNo={8}
+               sectionName="Charging Mechanism (Including MRC, OTC, VAS charges and Taxes)" // Unique heading identifier
+ 
+            />
 
 </div>
 
@@ -59,22 +45,15 @@ className="mb-4 mt-4 p-3 border rounded shadow-sm">
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">9. Support (Troubleshooting, Fault types) </h6>
-  <button
-    type="button"
-     className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-    onClick={() => window.addClause('clause-9', true)}
-  >
-    + Add Clause
-  </button>
-
-  <ol id="clause-9" className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
-
+ <AddClause 
+                clauses={clauses}
+                addClause={addClause}
+                deleteClause={deleteClause}
+                updateClause={updateClause}
+               currentNo={9}
+               sectionName="Support (Troubleshooting, Fault types)" // Unique heading identifier
+ 
+            />
 </div>
 
 

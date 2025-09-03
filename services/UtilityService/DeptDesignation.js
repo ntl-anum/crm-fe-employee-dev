@@ -12,7 +12,7 @@ export const DeptDesignationService = {
   listDesignations,
   findDesignationsByDepartment,
   getDepartmentSubdepartments,
-  getSubdepartmentofEmployee,
+  getSubdepartmentofEmployee
 };
 
 const baseUrl = process.env.CONFIG_SERVICES_URL;

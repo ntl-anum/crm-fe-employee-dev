@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@next/font": "14.2.3",
+    "@react-pdf/renderer": "^4.3.0",
     "bootstrap": "^5.3.3",
     "chart.js": "^4.2.0",
     "crypto-js": "^4.1.1",

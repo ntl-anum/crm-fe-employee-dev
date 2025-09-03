@@ -1,16 +1,12 @@
-import { initializeClauseFunctions } from "@/helpers/clause-utils";
+import AddClause from "@/helpers/AddClause";
 import { useEffect, useState } from 'react';
 
-export default function Tab5ComplianceDocumentation({ formData, setFormData, onNext, onPrev,formType }) {
+export default function Tab5ComplianceDocumentation({ formData, setFormData, onNext, onPrev,formType, clauses, addClause, deleteClause, updateClause }) {
 
-  useEffect(() => {
-    initializeClauseFunctions();
-  }, []);
 
   const handleNext = () => onNext && onNext();
   const handlePrev = () => onPrev && onPrev();
 
-  console.log("anum:  ");
 console.log(formType);
   return (
    <div>
@@ -19,19 +15,16 @@ console.log(formType);
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">{formType=='service'? '15. ':'10. '} Technical Limitations</h6>
-  <button
-    type="button"
-    className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-    onClick={() => window.addClause('clause-15', true)}
-  >
-    + Add Clause
-  </button>
+   <AddClause 
+                clauses={clauses}
+                addClause={addClause}
+                deleteClause={deleteClause}
+                updateClause={updateClause}
+               currentNo={formType === 'service' ? 15 : 10}
+               sectionName="Technical Limitations" // Unique heading identifier
+ 
+            />
+ 
 
   <ol id="clause-15" className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
 
@@ -40,21 +33,14 @@ className="mb-4 mt-4 p-3 border rounded shadow-sm">
     {formType === 'service' && (
     <div className="mb-4 mt-4 p-3 border rounded shadow-sm">
       <h6 className="fw-bold mb-2">16. Terms & Conditions</h6>
-      <button
-        type="button"
-       className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-        onClick={() => window.addClause('clause-16', true)}
-      >
-        + Add Clause
-      </button>
-
-      <ol id="clause-16" className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
+        <AddClause 
+                     clauses={clauses}
+                     addClause={addClause}
+                     deleteClause={deleteClause}
+                     updateClause={updateClause}
+                     currentNo={16}
+                    sectionName="Process Explanation" // Unique heading identifier
+                 />
     </div>
   )}  
 

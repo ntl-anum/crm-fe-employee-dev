@@ -1,11 +1,19 @@
-import { initializeClauseFunctions } from "@/helpers/clause-utils";
+import AddClause from "@/helpers/AddClause";
 import { useEffect, useState } from 'react';
+import Select from "react-select";
+import {
+  colourStyles,
+  customTheme,
+} from "../../components/SelectStyleComponent";
 
-export default function Tab4Resonsibilities({ formData, setFormData, onNext, onPrev,formType }) {
-  const [roles, setRoles] = useState([{ department: '', responsibility: '' }]);
+
+export default function Tab4Resonsibilities({ formData, setFormData, onNext, onPrev , roles,
+  setRoles,
+  escalationRows,
+  setEscalationRows,formType, clauses, addClause, deleteClause, updateClause,searchDeptOptions,searchDesignationOptions}) {
+    
   const [image, setImage] = useState(null);
   const [explanationImage, setExplanationImage] = useState(null);
-
   const [showModal, setShowModal] = useState(false);
 
 const handleExplanationImageUpload = (e) => {
@@ -20,25 +28,37 @@ const handleExplanationImageUpload = (e) => {
 };
 
 
-  useEffect(() => {
-    initializeClauseFunctions();
-  }, []);
+    const handleNext = () => {
+    console.log(JSON.stringify(roles, null, 2)); // 2 spaces indentation
+    console.log(JSON.stringify(escalationRows, null, 2)); // 2 spaces indentation
 
-  const handleNext = () => onNext && onNext();
-  const handlePrev = () => onPrev && onPrev();
+    onNext && onNext();
+  };
 
-    const [escalationRows, setEscalationRows] = useState([
-    { level: '', designation: '', duration: '' },
-  ]);
+   const handlePrev = () => {
+    onPrev && onPrev();
+  };
+
+     const addRole = () => {
+    setRoles([...roles, { department: "", responsibility: "" }]);
+  };
+
+  const deleteRole = (index) => {
+    setRoles(roles.filter((_, i) => i !== index));
+  };
+
+  const handleRoleChange = (index, field, value) => {
+    const updated = [...roles];
+    updated[index][field] = value;
+    setRoles(updated);
+  };
 
   const addEscalationRow = () => {
-    setEscalationRows([...escalationRows, { level: '', designation: '', duration: '' }]);
+    setEscalationRows([...escalationRows, { level: "", designation: "", duration: "" }]);
   };
 
   const removeEscalationRow = (index) => {
-    const updated = [...escalationRows];
-    updated.splice(index, 1);
-    setEscalationRows(updated);
+    setEscalationRows(escalationRows.filter((_, i) => i !== index));
   };
 
   const handleInputChange = (index, field, value) => {
@@ -47,37 +67,28 @@ const handleExplanationImageUpload = (e) => {
     setEscalationRows(updated);
   };
 
-  const addRole = () => {
-    setRoles([...roles, { department: '', responsibility: '' }]);
-  };
-
-  const deleteRole = (index) => {
-    const updated = [...roles];
-    updated.splice(index, 1);
-    setRoles(updated);
-  };
-
-  const handleRoleChange = (index, field, value) => {
-    const updated = [...roles];
-    updated[index][field] = value;
-    setRoles(updated);
-  };
   return (
     
     <div className="p-3 border rounded shadow-sm">
         {/* Roles and Responsibilities Section */}
+        <div className="mb-4 mt-4 p-3 border rounded shadow-sm">
       <div className="mt-4">
         <h6 className="fw-bold mb-2">{formType === 'service' ? '10. ': '5. '}Roles and Responsibilities</h6>
         {roles.map((role, index) => (
           <div key={index} className="row g-2 align-items-start mb-2">
             <div className="col-md-4">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Department"
-                value={role.department}
-                onChange={(e) => handleRoleChange(index, 'department', e.target.value)}
-              />
+        
+               <Select
+                  instanceId={6}
+                  options={searchDeptOptions}
+                  name="dept"
+                    value={searchDeptOptions.find(opt => opt.value === role.dept) || null}
+                  onChange={(selectedOption) =>
+                  handleRoleChange(index, 'dept', selectedOption ? selectedOption.value : "")
+                }
+                  styles={colourStyles}
+                  // isOptionDisabled={(option) => option.disabled}
+                />
             </div>
             <div className="col-md-7">
               <textarea
@@ -91,25 +102,29 @@ const handleExplanationImageUpload = (e) => {
             <div className="d-flex justify-content-center align-items-start">
               <button
                 type="button"
-               className="btn btn-primary px-4"
+                 className="btn btn-danger ms-1"
+                style={{ padding: "0.3rem 0.5rem", color:"white",marginLeft:"10px" }}
+                onClick={() => deleteRole(index)}
+                title="Remove"
+              >
+                 <i className="fa fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        ))}
+        <button className="btn btn-primary px-4"
           style={{
           background: "rgb(40, 78, 147)",
           color: "white",
           marginTop:"10px",
           marginBottom:"10px"
-        }}
-                onClick={() => deleteRole(index)}
-                title="Remove"
-              >
-                  ×
-              </button>
-            </div>
-          </div>
-        ))}
-        <button  className="btn btn-sm btn-outline-primary mb-2" onClick={addRole}>
+        }} onClick={addRole}>
           + Add Another Role
         </button>
       </div>
+      </div>
+
+        <div className="mb-4 mt-4 p-3 border rounded shadow-sm">
           <h6 className="fw-bold mb-3">{formType === 'service' ? '11. ': '6. '} Escalation Matrix</h6>
           {escalationRows.map((row, index) => (
             <div key={index} className="row g-2 mb-2">
@@ -123,12 +138,23 @@ const handleExplanationImageUpload = (e) => {
                 />
               </div>
               <div className="col-md-4">
-                <input
+                {/* <input
                   type="text"
                   className="form-control form-control-sm"
                   placeholder="Designation"
                   value={row.designation}
                   onChange={(e) => handleInputChange(index, 'designation', e.target.value)}
+                /> */}
+                  <Select
+                  instanceId={6}
+                  options={searchDesignationOptions}
+                  name="designation"
+                   value={searchDesignationOptions.find(opt => opt.value === row.designation) || null}
+                  onChange={(selectedOption) =>
+                  handleInputChange(index, 'designation', selectedOption ? selectedOption.value : "")
+                }
+                  styles={colourStyles}
+                  // isOptionDisabled={(option) => option.disabled}
                 />
               </div>
               <div className="col-md-3">
@@ -143,10 +169,11 @@ const handleExplanationImageUpload = (e) => {
               <div className="col-md-2 text-end">
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-danger" style={{padding:"6px 10px"}}
+                  className="btn btn-danger ms-1"
+                style={{ padding: "0.3rem 0.5rem", color:"white",marginLeft:"10px" }}
                   onClick={() => removeEscalationRow(index)}
                 >
-                  ×
+                  <i className="fa fa-trash"></i>
                 </button>
               </div>
             </div>
@@ -161,79 +188,48 @@ const handleExplanationImageUpload = (e) => {
             + Add Escalation Level
           </button>
     
-        
+        </div>
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">{formType === 'service' ? '12. ': '7. '} Logs Maintenance</h6>
-  <button
-    type="button"
-    className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-   onClick={() =>
-  formType === 'service'
-    ? window.addClause('clause-12', true)
-    : window.addClause('clause-7', true)
-}
-  >
-    + Add Clause
-  </button>
+  <AddClause 
+               clauses={clauses}
+               addClause={addClause}
+               deleteClause={deleteClause}
+               updateClause={updateClause}
+              currentNo={formType === 'service' ? 12 : 7}
+              sectionName="Logs Maintenance" // Unique heading identifier
 
-  <ol id={formType==='service' ? 'clause-12':'clause-7'} className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
+           />
 
 </div>
 
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">{formType === 'service' ? '13.': '8. '} KPI Monitoring</h6>
-  <button
-    type="button"
-    className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-     onClick={() =>
-  formType === 'service'
-    ? window.addClause('clause-13', true)
-    : window.addClause('clause-8', true)
-}
-  >
-    + Add Clause
-  </button>
+   <AddClause 
+               clauses={clauses}
+               addClause={addClause}
+               deleteClause={deleteClause}
+               updateClause={updateClause}
+              currentNo={formType === 'service' ? 13 : 8}
+              sectionName="KPI Monitoring" // Unique heading identifier
 
-  <ol id={formType==='service' ? 'clause-13':'clause-8'} className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
-
+           />
 </div>
 
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">{formType === 'service' ? '14. ': '9. '} Reporting</h6>
-  <button
-    type="button"
-   className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-   onClick={() =>
-  formType === 'service'
-    ? window.addClause('clause-14', true)
-    : window.addClause('clause-9', true)
-}
-  >
-    + Add Clause
-  </button>
+   <AddClause 
+               clauses={clauses}
+               addClause={addClause}
+               deleteClause={deleteClause}
+               updateClause={updateClause}
+              currentNo={formType === 'service' ? 14 : 9}
+              sectionName="Reporting" // Unique heading identifier
 
-  <ol id={formType==='service' ? 'clause-14':'clause-9'} className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
+           />
 
 </div>
 

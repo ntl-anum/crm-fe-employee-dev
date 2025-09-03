@@ -1,11 +1,8 @@
-import { initializeClauseFunctions } from "@/helpers/clause-utils";
+import AddClause from "@/helpers/AddClause";
 import { useEffect, useState } from 'react';
 
-export default function Service1({ formData, setFormData, onNext, onPrev ,formType}) {
+export default function Service1({ formData, setFormData, onNext, onPrev ,formType, clauses, addClause, deleteClause, updateClause}) {
 
-  useEffect(() => {
-    initializeClauseFunctions();
-  }, []);
 
   const handleNext = () => onNext && onNext();
   const handlePrev = () => onPrev && onPrev();
@@ -16,42 +13,31 @@ export default function Service1({ formData, setFormData, onNext, onPrev ,formTy
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">4. Provisioning of Service for Existing Customer</h6>
-  <button
-    type="button"
-   className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-    onClick={() => window.addClause('clause-4', true)}
-  >
-    + Add Clause
-  </button>
-
-  <ol id="clause-4" className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
+  <AddClause 
+                clauses={clauses}
+                addClause={addClause}
+                deleteClause={deleteClause}
+                updateClause={updateClause}
+               currentNo={4}
+               sectionName="Provisioning of Service for Existing Customer" // Unique heading identifier
+ 
+            />
+ 
 
 </div>
 
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">5. Provisioning of Service for New Customer</h6>
-  <button
-    type="button"
-    className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-    onClick={() => window.addClause('clause-5', true)}
-  >
-    + Add Clause
-  </button>
-
-  <ol id="clause-5" className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
+  <AddClause 
+                clauses={clauses}
+                addClause={addClause}
+                deleteClause={deleteClause}
+                updateClause={updateClause}
+               currentNo={5}
+               sectionName="Provisioning of Service for New Customer" // Unique heading identifier
+ 
+            />
 
 </div>
 
@@ -59,21 +45,15 @@ className="mb-4 mt-4 p-3 border rounded shadow-sm">
 <div
 className="mb-4 mt-4 p-3 border rounded shadow-sm">
   <h6 className="fw-bold mb-2">6. Packages</h6>
-  <button
-    type="button"
-    className="btn btn-primary px-4"
-          style={{
-          background: "rgb(40, 78, 147)",
-          color: "white",
-          marginTop:"10px",
-          marginBottom:"10px"
-        }}
-    onClick={() => window.addClause('clause-6', true)}
-  >
-    + Add Clause
-  </button>
-
-  <ol id="clause-6" className="clause-list ms-2" style={{ listStyleType: "none" }}></ol>
+  <AddClause 
+                clauses={clauses}
+                addClause={addClause}
+                deleteClause={deleteClause}
+                updateClause={updateClause}
+               currentNo={5}
+               sectionName="Packages" // Unique heading identifier
+ 
+            />
 
 </div>
 
