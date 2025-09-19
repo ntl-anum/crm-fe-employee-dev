@@ -273,7 +273,7 @@ const [invalidClauseIds, setInvalidClauseIds] = useState({});
   return (
     <div className="container mt-3">
       <div className="mb-4 p-3 border rounded shadow-sm">
-        <h5 className="fw-bold mb-2 required">Document Objective</h5>
+        <label className="fw-bold mb-2 required">Document Objective</label>
         <textarea
          name="documentobjective"
           className="form-control mt-3 "    
