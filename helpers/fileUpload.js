@@ -84,7 +84,7 @@ export const uploadToClient = async (
 };
 
 // ---------- Upload to Server (FTP) ----------
-export const uploadToServer = async (files, identifier, sopId) => {
+export const uploadToServer = async (files, identifier, sopId, keepOriginalName = false) => {
   const uploadedFiles = [];
 
   for (let file of files) {
@@ -92,6 +92,11 @@ export const uploadToServer = async (files, identifier, sopId) => {
     body.append("file", file);
     body.append("subFolder", FTP_Constants.NTL_COMPLIANCE_SOP_FOLDER);
 
+       // ✅ Pass a flag to prevent renaming
+    if (keepOriginalName) {
+      body.append("isExisting", "true");
+    }
+    
     try {
       const response = await fetch(FTP_Constants.UPLOAD_URL, {
         method: "POST",

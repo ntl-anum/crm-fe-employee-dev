@@ -28,10 +28,17 @@ export const ComplianceService = {
   addDocDetails,
   getAnnexureById,
   UpdateAnnexure,
-  getProcessImages
+  getProcessImages,
+  deletefile,
+  deleteAnnexureFiles,
+  UpdateSOP,
+  deleteSOPByName,
+  checkSOPByName
 
 };
 const baseUrl = process.env.CONFIG_SERVICES_URL;
+const ftpURL = process.env.FTP_SERVICE_URL;
+
 /**
  *
  * @param {*} params
@@ -132,11 +139,17 @@ function UpdateClauses(documentId, data) {
   return fetchWrapper.put(`${baseUrl}document/${documentId}/update-clauses`, data);
 }
 
+//function will archive previous document row and create new one
 function UpdateSOPDocument(documentId, data) {
   console.log("Updating SOP Document:", documentId, data);
   return fetchWrapper.put(`${baseUrl}document/${documentId}/update-sop`, data);
 }
 
+//function will only update document table row, doesnt create the whole new version
+function UpdateSOP(documentId, data) {
+  console.log("Updating SOP Document:", documentId, data);
+  return fetchWrapper.put(`${baseUrl}document/${documentId}/updateSOPDocument`, data);
+}
 function listArchivedSOPs(sopName){
  console.log("Fetching Archived SOPs:", sopName);
   return fetchWrapper.get(`${baseUrl}document/${sopName}/getAllArchivedSOP`);
@@ -160,4 +173,24 @@ function UpdateAnnexure(documentId, data) {
 function getProcessImages(id) {
   console.log("Fetching getProcessImages for ID: ", id);
   return fetchWrapper.get(`${baseUrl}document/getProcessImages/${id}`);
+}
+
+function deletefile(body) {
+  return fetchWrapper.post(`${ftpURL}ftp/deleteFile`, body);
+}
+
+function deleteAnnexureFiles(payload) {
+  console.log("files that are deleted: ", payload);
+  return fetchWrapper.post(`${baseUrl}document/deleteAnnexureFiles`, payload);
+}
+
+function deleteSOPByName(sopName){
+ console.log("Delete SOP Document:", sopName);
+  return fetchWrapper.put(`${baseUrl}document/delete-SOP/${sopName}`);
+}
+
+function checkSOPByName(sopName,dept,subDept){
+ console.log("Check If already exists sop name:", sopName);
+  return fetchWrapper.get(`${baseUrl}document/check-SOPExists/${sopName}/${dept}/${subDept}`);
+  
 }

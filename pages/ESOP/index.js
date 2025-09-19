@@ -18,14 +18,18 @@ import { APP_ROUTES } from "../../helpers/enums";
 import { DeptDesignationService } from "@/services/UtilityService/DeptDesignation";
 import { departmentService } from "@/services/UtilityService/departmentService";
 import Select from "react-select";
+import { toast } from "react-toastify";
+import { animateScroll } from "react-scroll";
+
 
 const user = getOperatorFromCookie();
+console.log("login user is: ",user);
 
 export default function SOPForm() {
 
   const URLParams = useURLParams();
   const router = useRouter();
-
+  const [deletedFiles, setDeletedFiles] = useState([]);
   const [formType, setFormType] = useState("");
   const [rightLevelValueOptions, setRightLevelValueOptions] = useState([]);
     const [searchDeptOptions, setSearchDeptOptions] = useState([]);
@@ -131,7 +135,12 @@ const sopTypeOptions = [
   { value: "process", label: "Process" }
 ];
 
-
+  // 🔹 Define options
+const criticalityOptions = [
+  { value: "High", label: "High" },
+  { value: "Medium", label: "Medium" },
+  { value: "Low", label: "Low" }
+];
 const infoClassificationOptions = [
   { value: "Internal", label: "Internal" },
   { value: "Public", label: "Public" },
@@ -143,8 +152,135 @@ const manualRequiredOptions = [
   { value: "No", label: "No" }
 ];
 
+const docTypeOptions = [
+  { value: "New", label: "New" },
+  { value: "Migrated", label: "Migrated" }
+];
 
+const mandatorySections = {
+  service: ["Scope", "Definition","Process Flow","Provisioning of Service for Existing Customer","Provisioning of Service for New Customer","Packages","Locking/Unlocking of Service","Charging Mechanism (Including MRC, OTC, VAS charges and Taxes)","Support (Troubleshooting, Fault types)","Terms & Conditions"],
+  process: ["Scope", "Definition","Process Flow","Process Explanation"],    // Example
+};
 
+// ✅ Enhanced validation function that tracks specific invalid clauses
+// const validateClauses = (clauses, formType, pageSections) => {
+//   const mandatory = mandatorySections[formType] || [];
+//   let invalidSections = [];
+//   let invalidClauseIds = {}; // Track specific clause IDs that are invalid
+
+//   pageSections.forEach(section => {
+//     const sectionClauses = clauses.filter(c => c.sectionName === section);
+//     const isMandatory = mandatory.includes(section);
+
+//     if (isMandatory && sectionClauses.length === 0) {
+//       // 🔹 Case 1: mandatory but no clause at all
+//       invalidSections.push({ section, error: "missing" });
+//     } else if (sectionClauses.length > 0) {
+//       const emptyClauses = sectionClauses.filter(c => !c.text || !c.text.trim());
+
+//       if (emptyClauses.length > 0) {
+//         // 🔹 Case 2: clause(s) added but text is empty
+//         invalidSections.push({ 
+//           section, 
+//           error: "empty", 
+//           count: emptyClauses.length,
+//           clauseIds: emptyClauses.map(c => c.id) // Track specific clause IDs
+//         });
+        
+//         // Add clause IDs to the object for easy lookup
+//         emptyClauses.forEach(c => {
+//           invalidClauseIds[c.id] = true;
+//         });
+//       }
+//     }
+//   });
+
+//   return {
+//     invalidSections,
+//     invalidClauseIds, // Now returns object like { clauseId1: true, clauseId2: true }
+//     isValid: invalidSections.length === 0
+//   };
+// };
+// ✅ Simplified validation function with basic security checks
+const validateClauses = (clauses, formType, pageSections) => {
+  const mandatory = mandatorySections[formType] || [];
+  let invalidSections = [];
+  let invalidClauseIds = {}; // Track specific clause IDs that are invalid
+
+  // 🔹 Simple security pattern check
+  const hasSecurityThreat = (text) => {
+    // Check for script tags, SQL patterns, and suspicious content
+  const dangerousPatterns = [
+  /<script/i,                        // Script tags
+  /<\/?meta/i,                       // Meta tags
+  /javascript:/i,                    // JavaScript protocol
+  /\balert\s*\(/i,                   // alert(...)
+  /\bprompt\s*\(/i,                  // prompt(...)
+  /\bconfirm\s*\(/i,                 // confirm(...)
+  /(\bSELECT\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bDROP\b|\bUNION\b|\bEXEC\b)/i, // SQL keywords
+  /\b1\s*=\s*1\b/i,                  // SQL injection (1=1)
+  /\b\d+\s*AND\s*\d+\b/i,            // 1 AND 1 style injection
+  /<iframe/i,                        // Iframe tags
+  /on\w+\s*=/i,                      // Inline event handlers (onclick, onerror, etc.)
+  /__.*?__/,                         // Metadata-like tokens
+  /\$\{.*?\}/,                       // Template literals / expression injection
+];
+    return dangerousPatterns.some(pattern => pattern.test(text));
+  };
+
+  pageSections.forEach(section => {
+    const sectionClauses = clauses.filter(c => c.sectionName === section);
+    const isMandatory = mandatory.includes(section);
+
+    if (isMandatory && sectionClauses.length === 0) {
+      // 🔹 Case 1: mandatory but no clause at all
+      invalidSections.push({ section, error: "missing" });
+    } else if (sectionClauses.length > 0) {
+      const emptyClauses = sectionClauses.filter(c => !c.text || !c.text.trim());
+      let hasSecurityIssues = false;
+
+      // 🔹 Check each clause for security issues
+      sectionClauses.forEach(clause => {
+        if (clause.text && clause.text.trim()) {
+          if (hasSecurityThreat(clause.text)) {
+            hasSecurityIssues = true;
+            // Mark clause as invalid for border highlighting
+            invalidClauseIds[clause.id] = true;
+          }
+        }
+      });
+
+      if (emptyClauses.length > 0) {
+        // 🔹 Case 2: clause(s) added but text is empty
+        invalidSections.push({ 
+          section, 
+          error: "empty", 
+          count: emptyClauses.length,
+          clauseIds: emptyClauses.map(c => c.id)
+        });
+        
+        // Add clause IDs to the object for easy lookup
+        emptyClauses.forEach(c => {
+          invalidClauseIds[c.id] = true;
+        });
+      }
+
+      if (hasSecurityIssues) {
+        // 🔹 Case 3: security threats detected
+        invalidSections.push({
+          section,
+          error: "security"
+        });
+      }
+    }
+  });
+
+  return {
+    invalidSections,
+    invalidClauseIds, // Now returns object like { clauseId1: true, clauseId2: true }
+    isValid: invalidSections.length === 0
+  };
+};
 
 useEffect(() => {
   if (router.isReady && URLParams?.id) {
@@ -196,6 +332,16 @@ useEffect(() => {
         return match || { value: val, label: val };
       }) : [];
 
+           const preSelectedApprovedBy = sop?.approvedBy
+     ? sop.approvedBy
+      .split(",")
+      .map(s => s.trim()) // remove spaces
+      .map(val => {
+        const match = rightLevelValueOptions.find(opt => opt.value === val);
+        return match || { value: val, label: val };
+      }) : [];
+
+
     const preSelectedDepts = sop?.stakeholders
      ? sop.stakeholders
       .split(",")
@@ -212,6 +358,9 @@ useEffect(() => {
       
             setFormData({
               sop_name: sop.sop_name || '',
+              docType: docTypeOptions.find(
+              opt => opt.value === sop.docType
+              ) || "",
               sopType: sopTypeOptions.find(
               opt => opt.value === sop.sop_type
             ) || "",
@@ -223,12 +372,15 @@ useEffect(() => {
               city: sop.city ? { value: sop.city, label: sop.city } 
                 : "",
               version: sop.version || '',
-              criticalityLevel: sop.criticalityLevel || '',
+             criticalityLevel: criticalityOptions.find(
+            opt => opt.value === sop.criticalityLevel
+          ) || null,
               dateOfApproval: sop.dateOfApproval || '',
               preparedBy: sop.preparedBy 
                 ? { value: sop.preparedBy, label: sop.preparedBy } 
                 : "",
               reviewedStakeholders: preSelected,
+              approvedBy:preSelectedApprovedBy,
               infoClassification:  infoClassificationOptions.find(
               opt => opt.value === sop.informationClassification
             ) || "",
@@ -262,19 +414,21 @@ useEffect(() => {
     setSopId(null);
     setFormData({
   sop_name: "",
+  docType:"",
   sopType: null,
   ownerDepartment: null,
   stakeholders: [],
   subDepartment: null,
   city: null,
-  version: "",
+  version: "1.0",
   criticalityLevel: "",
   dateOfApproval: "",
   preparedBy: preparedByOption,
-  reviewedStakeholders: [],
+  reviewedStakeholders: reviewedStakeholders_option,
   infoClassification: "",
   manualRequired: "",
   documentobjective: "",
+  approvedBy:""
 });
 setRoles(
   (rolesData ?? []).map(h => ({
@@ -292,7 +446,7 @@ setEscalationRows(
 
 setHistory(
   (historyData ?? []).map(h => ({
-    version: null,
+    version: formData.version,
     preparedBy: null,
     approvedBy: null,
     datetime: null,
@@ -301,11 +455,11 @@ setHistory(
 );
 setClauses(
   (clauseData ?? []).map(c => ({
-    id: c.id || null,
-    parent_id: c.parent_id || null,
-    seq: c.seq || "",
-    text: c.text || "",
-    sectionName: c.sectionName || ""
+    id:  null,
+    parent_id:  null,
+    seq:  "",
+    text:  "",
+    sectionName: ""
   }))
 );
 
@@ -349,7 +503,24 @@ if (clauseData?.length > 0) {
     }
 }, [clauseData]); // 👈 waits for both
 
+useEffect(() => {
+  if (historyData?.length > 0) {
+    setHistory(
+      historyData.map(h => ({
+        version: h.version || "",
+        preparedBy: h.preparedBy || "",
+        approvedBy: h.approvedBy || "",
+        datetime: h.datetime || "",
+        changes: h.changes || ""
+      }))
+    );
+  } else {
+    // Optional: start with one empty row if no history exists
+    setHistory([{ version: formData.version, preparedBy:preparedByOptions[0]?.value || "", approvedBy: "", datetime: "", changes: "" }]);
+  }
+}, [historyData]); // 👈 historyData is the fetched history array
   const preparedByOption = { value: user, label: user };
+
 
   // If you already have other options for preparedBy:
   const preparedByOptions = [
@@ -357,32 +528,54 @@ if (clauseData?.length > 0) {
     // ...other options
   ];
 
+  const reviewedStakeholders_option = [
+    { value: "saad.asad", label: "saad.asad" }
+  ];
+
 
     const [formData, setFormData] = useState({
     sop_name:'',
     sopType: formType,
+    docType:'',
     ownerDepartment: '',
     stakeholders: [],
     subDepartment: '',
     city: '',
-    version: '',
+    version: '1.0',
     criticalityLevel: '',
     dateOfApproval: '',
     preparedBy: preparedByOption,
-    reviewedStakeholders: [],
+    reviewedStakeholders: reviewedStakeholders_option,
     infoClassification: '',
     manualRequired: '',
     documentobjective:'',
+    approvedBy:'',
   });
   // for history version management
 
     const [history, setHistory] = useState([]);
 
+  //     console.log("original sop Data:", formData);
+  // console.log("fetched for editing: ",sop);
   // ✅ History state handlers
   const addHistoryRow = () => {
+    if (history.length >= 5) {
+    toast.error("You can only add up to 100 versions.");
+    return;
+  }
+  //✅ Duplicate version check
+  const versionToAdd =  "";
+  // if (versionToAdd) {
+    const isDuplicate = history.some((row) => row.version === versionToAdd);
+    if (isDuplicate) {
+      toast.error(`Version "${versionToAdd}" already exists. Please use a unique version.`);
+      return;
+    }
+  // }
+
     setHistory(prev => [
       ...prev,
-      { version: "", preparedBy: "", approvedBy: "", datetime: "", changes: "" }
+      { version:"" || "", preparedBy:  preparedByOption ? preparedByOption.value : "", approvedBy: "", datetime: "", changes: "" }
     ]);
   };
 
@@ -393,6 +586,16 @@ if (clauseData?.length > 0) {
   const updateHistoryField = (index, field, value) => {
     setHistory(prev => {
       const updated = [...prev];
+       // Check for duplicate version only when editing 'version' field
+    if (field === 'version') {
+      const isDuplicate = prev.some((row, i) => i !== index && row.version === value);
+      if (isDuplicate) {
+        toast.error(`Version "${value}" already exists. Please use a unique version.`);
+        updated[index][field] = ""; // reset to blank
+        return updated;
+      }
+    }
+    
       updated[index][field] = value;
       return updated;
     });
@@ -402,22 +605,83 @@ if (clauseData?.length > 0) {
   // roles & responsibility AND escalation matrix
    const [roles, setRoles] = useState([{ dept: "", responsibility: "" }]);
   const [escalationRows, setEscalationRows] = useState([
-    { level: "", designation: "", duration: "" }
-  ]);
+  { level: "Level 1", designation: "", duration: "" }
+]);
   // roles & responsibility AND escalation matrix
   // for clauses of document
   const [clauses, setClauses] = useState([]);
 // Add a top-level clause
   const addClause = (parentId = null, manualSectionNumber = null, sectionName = null) => {
-    console.log("section name is: "+ sectionName);
-    const newClause = {
-      id: Date.now(), // temporary unique ID (replace with backend ID after save)
-      parent_id: parentId,
-      seq: manualSectionNumber || "",
-      text: "",
-      sectionName, // ✅ store section name
-    };
-    setClauses((prev) => [...prev, newClause]);
+    // console.log("section name is: "+ sectionName);
+    // const newClause = {
+    //   id: Date.now(), // temporary unique ID (replace with backend ID after save)
+    //   parent_id: parentId,
+    //   seq: manualSectionNumber || "",
+    //   text: "",
+    //   sectionName, // ✅ store section name
+    // };
+    // setClauses((prev) => [...prev, newClause]);
+
+  console.log("section name is: " + sectionName);
+    
+  // Helper function to count hierarchy depth
+  const getHierarchyDepth = (sectionNumber) => {
+    if (!sectionNumber) return 0;
+    return sectionNumber.toString().split('.').length;
+  };
+  
+  // Helper function to get sibling prefix (everything except the last number)
+  const getSiblingPrefix = (sectionNumber) => {
+    if (!sectionNumber) return "";
+    const parts = sectionNumber.toString().split('.');
+    return parts.slice(0, -1).join('.');
+  };
+  
+  // Helper function to count siblings with same prefix
+const countSiblingsWithPrefix = (prefix) => {
+  return clauses.filter(clause => {
+    if (!clause.seq) return false;
+    const clausePrefix = getSiblingPrefix(clause.seq);
+    return clausePrefix === prefix && clause.sectionName === sectionName;
+  }).length;
+};
+  
+  // Check hierarchy depth limit 
+  if (manualSectionNumber) {
+    const depth = getHierarchyDepth(manualSectionNumber);
+    
+    // DEBUG: Log the section number and calculated depth
+    console.log(`DEBUG - Section: "${manualSectionNumber}", Calculated Depth: ${depth}`);
+    
+    // Adjust this number based on your counting method
+    if (depth >= 5) {
+      toast.error(`Maximum hierarchy depth of 5 reached.Cannot add more sub-clauses.`);
+      return;
+    }
+  }
+  
+  // Check sibling count limit (max 20 siblings at same level)
+  if (manualSectionNumber) {
+    const siblingPrefix = getSiblingPrefix(manualSectionNumber);
+    const siblingCount = countSiblingsWithPrefix(siblingPrefix);
+    
+    if (siblingCount >= 5) {
+      const levelDescription = siblingPrefix ? `level "${siblingPrefix}"` : "root level";
+      toast.error(`Maximum of 5 clauses. Cannot add more siblings.`);
+      return;
+    }
+  }
+  
+  // If all checks pass, create the new clause
+  const newClause = {
+    id: Date.now(), // temporary unique ID (replace with backend ID after save)
+    parent_id: parentId,
+    seq: manualSectionNumber || "",
+    text: "",
+    sectionName, // ✅ store section name
+  };
+  
+  setClauses((prev) => [...prev, newClause]);
   };
 
   const deleteClause = (id) => {
@@ -437,10 +701,7 @@ if (clauseData?.length > 0) {
   )
 );
   }
-    const getNextSeq = (parentId) => {
-    const siblings = clauses.filter((c) => c.parent_id === parentId);
-    return siblings.length + 1;
-  };
+ 
   // for clauses of document
 
 
@@ -508,17 +769,21 @@ const tabList = formType === "service"
 
       {tab === "overview" && (
         <div style={{ marginBottom: "2rem" }}>
-          <Tab1DocumentHistory  formData={formData}
-      setFormData={setFormData}  onNext={goToNext}
-      onPrev={goToPrev}
-      preparedByOptions={preparedByOptions}
-      searchDeptOptions={searchDeptOptions}
-      rightLevelValueOptions={rightLevelValueOptions}
-      sopId={sopId}
-        infoClassificationOptions={infoClassificationOptions}
-        manualRequiredOptions={manualRequiredOptions}>
-        
-      </Tab1DocumentHistory>
+          <Tab1DocumentHistory  
+          formData={formData}
+          setFormData={setFormData}  onNext={goToNext}
+          onPrev={goToPrev}
+          preparedByOptions={preparedByOptions}
+          searchDeptOptions={searchDeptOptions}
+          rightLevelValueOptions={rightLevelValueOptions}
+          sopId={sopId}
+          infoClassificationOptions={infoClassificationOptions}
+          manualRequiredOptions={manualRequiredOptions}
+          criticalityOptions={criticalityOptions}
+          sopData={sop}
+          docTypeOptions={docTypeOptions}
+          >
+          </Tab1DocumentHistory>
         </div>
       )}
 
@@ -538,6 +803,8 @@ const tabList = formType === "service"
   deleteClause={deleteClause}
   updateClause={updateClause}
   preparedByOptions={preparedByOptions}
+  validateClauses={validateClauses}
+
 />
         </div>
       )}
@@ -549,13 +816,16 @@ const tabList = formType === "service"
           setFormData={setFormData}
           onNext={goToNext}
           onPrev={goToPrev}
-            formType={formType}
-             clauses={clauses}
-  addClause={addClause}
-  deleteClause={deleteClause}
-  updateClause={updateClause}
-  processFiles={processFiles}
-  setProcessFiles={setProcessFiles}
+          formType={formType}
+          clauses={clauses}
+          addClause={addClause}
+          deleteClause={deleteClause}
+          updateClause={updateClause}
+          processFiles={processFiles}
+          setProcessFiles={setProcessFiles}
+          deletedFiles={deletedFiles}
+          setDeletedFiles={setDeletedFiles}
+          validateClauses={validateClauses}
         />
         </div>
       )}
@@ -578,6 +848,8 @@ const tabList = formType === "service"
           updateClause={updateClause}
           searchDeptOptions={searchDeptOptions}
           searchDesignationOptions={searchDesignationOptions}
+          validateClauses={validateClauses}
+
         />
         </div>
       )}
@@ -594,6 +866,8 @@ const tabList = formType === "service"
   addClause={addClause}
   deleteClause={deleteClause}
   updateClause={updateClause}
+  validateClauses={validateClauses}
+
 />
         </div>
       )}
@@ -613,6 +887,16 @@ const tabList = formType === "service"
         sopId={sopId}
         processFiles={processFiles}
         setProcessFiles={setProcessFiles}
+        deletedFiles={deletedFiles}
+        setDeletedFiles={setDeletedFiles}
+        validateClauses={validateClauses}
+        historyData={historyData}
+        clauseData={clauseData}
+        escalationData={escalationData}
+        rolesData={rolesData}
+        sopData={sop}
+        // annexureData={annexureData}
+
 
       />
         </div>
@@ -630,6 +914,8 @@ const tabList = formType === "service"
         addClause={addClause}
         deleteClause={deleteClause}
         updateClause={updateClause}
+        validateClauses={validateClauses}
+
       />
         </div>
       )}
@@ -647,6 +933,8 @@ const tabList = formType === "service"
       addClause={addClause}
       deleteClause={deleteClause}
       updateClause={updateClause}
+      validateClauses={validateClauses}
+
     />
         </div>
       )}

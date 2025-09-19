@@ -1,6 +1,9 @@
 // components/SOPDocument.js
 import React from "react";
-import { Page, Text, View, Document, StyleSheet } from "@react-pdf/renderer";
+import { useState, useEffect } from "react";
+import { FTP_Constants } from "../../constants/FTP_Constants";
+import { Page, Text, View, Document, StyleSheet, Image } from "@react-pdf/renderer";
+import ug from "date-fns/locale/ug";
 
 const styles = StyleSheet.create({
   page: { padding: 20, fontSize: 11, fontFamily: "Helvetica" },
@@ -43,13 +46,29 @@ const styles = StyleSheet.create({
   paddingLeft: 15,
   breakInside: "avoid", // stops splitting
 },
+annexureTitle: {
+  fontSize: 14,
+  marginTop: 20,
+  marginBottom: 10,
+  fontWeight: "bold",
+  textDecoration: "underline"
+},
+annexureImage: {
+  width: "100%",       // keep responsive
+  maxHeight: 400,      // avoids shrinking other content
+  marginVertical: 10,
+  alignSelf: "center"  // center it
+}
+
 });
 
 
 
-const PreviewPDF = ({ sop, historyData,rolesData,escalationData,clauseData,annexures }) => {
-    console.log("clausesData data is:",clauseData);
-    console.log("historyData is:",historyData);
+const PreviewPDF = ({ sop, historyData,rolesData,escalationData,clauseData,annexures,processFiles }) => {
+    console.log("Annexure data is:",annexures);
+    console.log("processFiles data is:",processFiles);
+    
+
     // Recursive renderer for hierarchical clauses
 const buildHierarchy = (clauses) => {
   const map = {};
@@ -88,6 +107,15 @@ const buildHierarchy = (clauses) => {
   return roots;
 };
 
+const groupedAnnexures = annexures.reduce((acc, item) => {
+  const key = item.subValue || "Misc";
+  if (!acc[key]) acc[key] = [];
+  acc[key].push(item);
+  return acc;
+}, {});
+
+console.log("images are grouped: ",groupedAnnexures);
+
 // Usage
 const previewData = buildHierarchy(clauseData);
 // Add this inside your PreviewPDF component, just before return
@@ -103,7 +131,7 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
       : `${sectionNumber}.${idx + 1}`;
 
     return (
-      <View key={node.id}   style={[styles.clauseContainer, { marginLeft: level * 10, marginBottom: 4 }]}
+      <View key={node.id}   style={[styles.clauseContainer,   { marginLeft: level * 2, marginBottom: 4 }]}
       wrap={false}>
         <Text>
           {currentSeq} {node.text}
@@ -116,9 +144,6 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
     );
   });
 };
-
-
-
 
   return (
     <Document>
@@ -139,6 +164,7 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
             ["Version", sop.version],
             ["Status", sop.status],
             ["Reviewed Stakeholders", sop.reviewed_stakeholders],
+            ["Approved By", sop.approvedBy],
             ["Stakeholders", sop.stakeholders],
             ["Date of Approval", sop.dateOfApproval],
             ["City", sop.city],
@@ -164,7 +190,9 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
           </View>
 
           {/* Data Rows */}
-          {(historyData || [
+          
+          {
+          (historyData || [
             {
               version: "1.0",
               preparedBy: sop.preparedBy,
@@ -173,11 +201,12 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
               changes: "Initial Creation",
             },
           ]).map((h, idx) => (
+            
             <View style={styles.row} key={idx}>
               <Text style={styles.cellValue}>{h.version}</Text>
               <Text style={styles.cellValue}>{h.preparedBy}</Text>
               <Text style={styles.cellValue}>{h.approvedBy}</Text>
-              <Text style={styles.cellValue}>{h.datetime}</Text>
+              <Text style={styles.cellValue}> {h.datetime ? h.datetime.split("T")[0] : ""}</Text>
               <Text style={styles.cellValue}>{h.changes}</Text>
             </View>
           ))}
@@ -197,11 +226,83 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
             {/* Conditional Sections */}
         {sop.sop_type === "process" ? (
           <>
-               <Text style={styles.sectionTitle}>4. Process Explanation</Text>
-    {renderClauses(previewData.filter((c) => c.sectionName === "Process Explanation"), 4)}
+            <Text style={styles.sectionTitle}>4. Process Explanation</Text>
+            {renderClauses(previewData.filter((c) => c.sectionName === "Process Explanation"), 4)}
 
-   {/* Role & Responsibility Section */}
-    <Text style={styles.sectionTitle}>5. Roles and Responsibility</Text>
+   
+            {processFiles && processFiles.length > 0 ? (
+            <View wrap={false}>
+                {processFiles.map((file, idx) => {
+                const originalUrl = `${FTP_Constants.STORAGE_URL}/views/crmViews/storage/${FTP_Constants.NTL_COMPLIANCE_SOP_FOLDER}/${file.value}`;
+                const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`;
+
+                return (
+                    <View key={idx} wrap={false}>
+                    <Text style={styles.annexureTitle}>Explanation {idx + 1}</Text>
+                    <Image src={proxyUrl} style={styles.annexureImage} />
+                    </View>
+                );
+                })}
+            </View>
+            ) : (
+            <Text>No process explanation files found.</Text>
+            )}
+
+          </>
+        ) : (
+          <>
+                        {/* 4. Provisioning of Service for Existing Customer */}
+            <Text style={styles.sectionTitle}>4. Provisioning of Service for Existing Customer</Text>
+            {renderClauses(
+            previewData.filter((c) => c.sectionName === "Provisioning of Service for Existing Customer"),
+            4
+            )}
+
+            {/* 5. Provisioning of Service for New Customer */}
+            <Text style={styles.sectionTitle}>5. Provisioning of Service for New Customer</Text>
+            {renderClauses(
+            previewData.filter((c) => c.sectionName === "Provisioning of Service for New Customer"),
+            5
+            )}
+
+            {/* 6. Packages */}
+            <Text style={styles.sectionTitle}>6. Packages</Text>
+            {renderClauses(
+            previewData.filter((c) => c.sectionName === "Packages"),
+            6
+            )}
+
+            {/* 7. Locking/Unlocking of Service */}
+            <Text style={styles.sectionTitle}>7. Locking/Unlocking of Service</Text>
+            {renderClauses(
+            previewData.filter((c) => c.sectionName === "Locking/Unlocking of Service"),
+            7
+            )}
+
+            {/* 8. Charging Mechanism */}
+            <Text style={styles.sectionTitle}>
+            8. Charging Mechanism (Including MRC, OTC, VAS charges and Taxes)
+            </Text>
+            {renderClauses(
+            previewData.filter(
+                (c) => c.sectionName === "Charging Mechanism (Including MRC, OTC, VAS charges and Taxes)"
+            ),
+            8
+            )}
+
+            {/* 9. Support */}
+            <Text style={styles.sectionTitle}>9. Support (Troubleshooting, Fault types)</Text>
+            {renderClauses(
+            previewData.filter((c) => c.sectionName === "Support (Troubleshooting, Fault types)"),
+            9
+            )}
+
+          </>
+        )}
+
+        {/* will render in both service and process sop type */}
+         {/* Role & Responsibility Section */}
+    <Text style={styles.sectionTitle}>{sop.sop_type === "service" ? "10." : "5."} Roles and Responsibility</Text>
     <View style={[styles.table,styles.clauseContainer]} wrap={false}>
 
     {/* Header Row */}
@@ -223,7 +324,7 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
     </View>
 
               {/* Escalation section */}
-        <Text style={styles.sectionTitle}>6. Escalation Matrix</Text>
+        <Text style={styles.sectionTitle}>{sop.sop_type === "service" ? "11." : "6."}  Escalation Matrix</Text>
         <View style={[styles.table,styles.clauseContainer]} wrap={false}>
 
           {/* Header Row */}
@@ -253,19 +354,19 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
           </View>
 
             {/* Logs Maintenance Section */}
-            <Text style={styles.sectionTitle}>7. Logs Maintenance</Text>
+            <Text style={styles.sectionTitle}>{sop.sop_type === "service" ? "12." : "7."}  Logs Maintenance</Text>
             {renderClauses(previewData.filter((c) => c.sectionName === "Logs Maintenance"), 7)}
 
                         {/* KPI Monitoring Section */}
-            <Text style={styles.sectionTitle}>8. KPI Monitoring</Text>
+            <Text style={styles.sectionTitle}>{sop.sop_type === "service" ? "13." : "8."} KPI Monitoring</Text>
             {renderClauses(previewData.filter((c) => c.sectionName === "KPI Monitoring"), 8)}
 
                         {/* KPI Monitoring Section */}
-            <Text style={styles.sectionTitle}>9. Reporting</Text>
+            <Text style={styles.sectionTitle}>{sop.sop_type === "service" ? "14." : "9."} Reporting</Text>
             {renderClauses(previewData.filter((c) => c.sectionName === "Reporting"), 9)}
 
                       {/* KPI Monitoring Section */}
-            <Text style={styles.sectionTitle}>10. Technical Limitations</Text>
+            <Text style={styles.sectionTitle}>{sop.sop_type === "service" ? "15." : "10."} Technical Limitations</Text>
             {renderClauses(previewData.filter((c) => c.sectionName === "Technical Limitations"), 10)}
 
             {/* Compliance Section 1 */}
@@ -304,26 +405,27 @@ const renderClauses = (nodes, sectionNumber, level = 1) => {
                 The owner department must check and, if necessary, update the document at least once a year.
             </Text>
             </View>
+            {/* Annexures Section */}
+                <Text style={styles.sectionTitle}>{sop.sop_type === "service" ? "19. Annexure": "14. Annexure"}</Text>
+                {Object.keys(groupedAnnexures).map((annexureName, idx) => (
+                <View key={idx} wrap={false}>
+                    <Text style={styles.annexureTitle}>Annexure {annexureName}</Text>
+                    {groupedAnnexures[annexureName].map((annex, i) => {
+                    const originalUrl = `${FTP_Constants.STORAGE_URL}/views/crmViews/storage/${FTP_Constants.NTL_COMPLIANCE_SOP_FOLDER}/${annex.value}`;
+                    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`;
 
-          </>
-        ) : (
-          <>
-            <Text style={styles.sectionTitle}>Service Specific Sections</Text>
-            {/* Example service fields */}
-            <View style={styles.table}>
-              <View style={styles.row}>
-                <Text style={styles.cellKey}>Escalation Matrix</Text>
-                <Text style={styles.cellValue}>
-                  {escalationData?.map((e) => e.name).join(", ") || "N/A"}
-                </Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.cellKey}>Annexures</Text>
-                <Text style={styles.cellValue}>{annexures?.length || 0} Annexures</Text>
-              </View>
-            </View>
-          </>
-        )}
+
+                    return (
+                        <Image
+                        key={i}
+                        src={proxyUrl}
+                        style={styles.annexureImage}
+                        />
+                    );
+                    })}
+                </View>
+                ))}
+   
 
       </Page>
     </Document>

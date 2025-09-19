@@ -8,10 +8,12 @@ import { ComplianceService } from "@/services/ComplianceService/ComplianceServic
 import { useRouter } from "next/router";
 import useURLParams from "@/hooks/useURLParams";
 import { FTP_Constants } from "@/constants/FTP_Constants";
+import { toast } from "react-toastify";
 
 
 
-export default function Tab3Processes({ formData, setFormData, onNext, onPrev, formType, clauses, addClause, deleteClause, updateClause,  processFiles,setProcessFiles }) {
+
+export default function Tab3Processes({ formData, setFormData, onNext, onPrev, formType, clauses, addClause, deleteClause, updateClause,  processFiles,setProcessFiles,setDeletedFiles,deletedFiles,validateClauses }) {
 
     const URLParams = useURLParams();
   const router = useRouter();
@@ -21,9 +23,52 @@ export default function Tab3Processes({ formData, setFormData, onNext, onPrev, f
   const previewFileTypes = ["image/png", "image/jpeg", "image/jpg"];
 
      const handleNext = () => {
+
+          // Example: In "Scope Page"
+      const pageSections = ["Process Explanation","Definition","Process Flow"
+      ];
+
+      // ✅ Extract value from sopType object
+      const sopType = formData.sopType?.value;
+     // ✅ Get enhanced validation results
+  const validationResult = validateClauses(clauses, sopType, pageSections);
+  
+  if (!validationResult.isValid) {
+        // ✅ Set invalid clause IDs for red border styling
+    setInvalidClauseIds(validationResult.invalidClauseIds);
+    
+    // 🔹 Check for security issues first
+    const hasSecurityError = validationResult.invalidSections.some(sec => sec.error === "security");
+    
+    if (hasSecurityError) {
+      // 🔹 Single generic security alert
+      toast.error("Security alert: Please remove any scripts, HTML tags, or suspicious content from the clauses.");
+      return;
+    }
+    
+    // ✅ Set invalid clause IDs for red border styling
+    setInvalidClauseIds(validationResult.invalidClauseIds);
+    
+    validationResult.invalidSections.forEach(sec => {
+      if (sec.error === "missing") {
+        toast.error(`Section "${sec.section}" is required.`);
+      } else if (sec.error === "empty") {
+        toast.error(`Section "${sec.section}" has ${sec.count} empty clause(s).`);
+      }
+    });
+    return;
+  }
+
+  // ✅ Clear invalid clause IDs if validation passes
+       setInvalidClauseIds({});
+  
+
     console.log(JSON.stringify(clauses, null, 2)); // 2 spaces indentation
     onNext && onNext();
+          return;
   };
+// ✅ Add state to track invalid clause IDs (add this to your component state)
+const [invalidClauseIds, setInvalidClauseIds] = useState({});
 
    const handlePrev = () => {
     onPrev && onPrev();
@@ -38,19 +83,31 @@ export default function Tab3Processes({ formData, setFormData, onNext, onPrev, f
 const handleProcessFileUpload = (e) => {
     uploadToClient(e, "Process Explanation", processFiles, setProcessFiles);
 };
-  // Remove File
-  const removeProcessFile = (index) => {
-    setProcessFiles((prev) =>
-      prev.map((s) =>
-        s.sectionName === "Process Explanation"
-          ? {
-              ...s,
-              files: s.files.filter((_, i) => i !== index),
-            }
-          : s
-      )
-    );
-  };
+const removeProcessFile = (index) => {
+  setProcessFiles((prev) =>
+    prev.map((s) => {
+      if (s.sectionName === "Process Explanation") {
+        const removedFile = s.files[index];
+
+        // keep track of deleted file for backend
+        setDeletedFiles((prevDeleted) => [
+          ...prevDeleted,
+          {
+            subValue: s.sectionName,   // "Process Explanation"
+            value: removedFile.filename, // DB filename
+          },
+        ]);
+
+        return {
+          ...s,
+          files: s.files.filter((_, i) => i !== index),
+        };
+      }
+      return s;
+    })
+  );
+};
+
 
   // Preview File
   const handlePreviewProcessFile = (file) => {
@@ -106,11 +163,20 @@ useEffect(() => {
     const processData = jsonRes.data || []; // access actual array
 
       console.log("Process images data is her: ",processData);
-      if (processData.length > 0) {
+        if (processData.length > 0) {
+        // ✅ Filter out deleted files before updating state
+        const filtered = processData.filter(
+          (item) =>
+            !deletedFiles.some(
+              (df) =>
+                df.subValue === "Process Explanation" &&
+                df.value === item.value
+            )
+        );
         setProcessFiles([
           {
             sectionName: "Process Explanation",
-            files: processData.map(item => ({
+            files: filtered.map(item => ({
               filename: item.value,
               type: getFileType(item.value), // guess or default
               filepath: `${FTP_Constants.STORAGE_URL}/views/crmViews/storage/${FTP_Constants.NTL_COMPLIANCE_SOP_FOLDER}/${item.value}`,
@@ -215,8 +281,8 @@ useEffect(() => {
       
       {/* Process Flow Section */}
       
-      <div className="mb-4 p-3 border rounded shadow-sm">
-        <h6 className="fw-bold mb-2">2. Definition</h6>
+      <div className="mb-0 p-3 border rounded shadow-sm">
+        {/* <h6 className="fw-bold mb-2">2. Definition</h6> */}
          <AddClause 
                clauses={clauses}
                addClause={addClause}
@@ -224,12 +290,14 @@ useEffect(() => {
                updateClause={updateClause}
                currentNo={2}
               sectionName="Definition" // Unique heading identifier
+       invalidClauseIds={invalidClauseIds}   // 👈 pass this
+
 
            />
       </div>
       
-      <div className="mb-4 p-3 border rounded shadow-sm">
-        <h6 className="fw-bold mb-2">3. Process Flow</h6>
+      <div className="mb-0 mt-4 p-3 border rounded shadow-sm">
+        {/* <h6 className="fw-bold mb-2">3. Process Flow</h6> */}
          <AddClause 
                clauses={clauses}
                addClause={addClause}
@@ -237,6 +305,8 @@ useEffect(() => {
                updateClause={updateClause}
                currentNo={3}
               sectionName="Process Flow" // Unique heading identifier
+       invalidClauseIds={invalidClauseIds}   // 👈 pass this
+
 
            />
       </div>
@@ -244,8 +314,8 @@ useEffect(() => {
 {/* Process Explanation Section */}
 {formType === 'process' && (
 <div
-className="mb-4 mt-4 p-3 border rounded shadow-sm">
-  <h6 className="fw-bold mb-2">4. Process Explanation</h6>
+className="mb-0 mt-4 p-3 border rounded shadow-sm">
+  {/* <h6 className="fw-bold mb-2">4. Process Explanation</h6> */}
     <AddClause 
                clauses={clauses}
                addClause={addClause}
@@ -254,6 +324,8 @@ className="mb-4 mt-4 p-3 border rounded shadow-sm">
                currentNo={4}
               sectionName="Process Explanation" // Unique heading identifier
               openModal={openModal}
+       invalidClauseIds={invalidClauseIds}   // 👈 pass this
+
            />
 
   {/* Upload Image Button */}

@@ -2,18 +2,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { ComplianceService } from "@/services/ComplianceService/ComplianceService";
 import { toast } from "react-toastify";
-import { Fragment } from 'react';
 import AddFile from "../../public/dist/img/AddFile.svg";
 import Image from "next/image";
-import { RingLoader } from 'react-spinners';
-import CircularLoader from "@/components/Loader/circularLoader";
-import path from "path";
+import { APP_ROUTES } from "../../helpers/enums";
 import { FTP_Constants } from "../../constants/FTP_Constants";
 import { useRouter } from "next/router";
 import useURLParams from "@/hooks/useURLParams";
 import { uploadToClient,uploadToServer  } from '@/helpers/fileUpload';
+import isEqual from "lodash/isEqual";
+import _ from "lodash";
 
-export default function AnnexureTab({ formData, setFormData, onNext, onPrev ,formType, history, clauses, escalationRows, roles,sopId,  processFiles,setProcessFiles }) {
+export default function AnnexureTab({ formData, setFormData, onNext, onPrev ,formType, history, clauses, escalationRows, roles,sopId,  processFiles,setProcessFiles,deletedFiles,setDeletedFiles, historyData,clauseData,escalationData,rolesData,sopData }) {
+
+  
+  // Remove id before comparison
   const URLParams = useURLParams();
   const router = useRouter();
   const [annexures, setAnnexures] = useState([
@@ -21,6 +23,7 @@ export default function AnnexureTab({ formData, setFormData, onNext, onPrev ,for
   ]);
   const [showLoader, setShowLoader] = useState(false);
   const proofFileUploadRefs = useRef({});
+  // const [deletedFiles, setDeletedFiles] = useState([]);
 
 function getFileType(filename) {
   if (!filename) return "";
@@ -66,7 +69,18 @@ function getFileType(filename) {
         try {
           const data1 = await ComplianceService.getAnnexureById(URLParams.id);
           const Data = await data1.json();
-          setAnnexureData(Data.data);
+          let anxData = Data.data || [];
+
+        // ✅ filter out deleted annexure files before setting state
+        const filtered = anxData.filter(
+          (item) =>
+            !deletedFiles.some(
+              (df) =>
+                df.subValue === item.subValue && df.value === item.value
+            )
+        );
+
+        setAnnexureData(filtered);
         } catch (err) {
           console.error("Error fetching Annexure data:", err);
         }
@@ -101,157 +115,7 @@ function getFileType(filename) {
     setAnnexures(Object.values(grouped));
   }, [annexureData]); // run only when API data changes
 
-// // Function to upload file to a specific annexure
-//   const uploadToClient = async (event, annexureLetter) => {
-//   setShowLoader(true);
-//   const selectedFiles = Array.from(event.target.files); // multiple files
-//   event.target.value = ""; // reset input
 
-//   if (selectedFiles.length === 0) {
-//     setShowLoader(false);
-//     return;
-//   }
-
-//   const allowedFileExtensions = [".img", ".msg"];
-//   const acceptedFileTypes = [
-//     "image/jpeg",
-//     "image/png",
-//     "image/jpg",
-//   ];
-//   const restrictedFileExtensions = [".xls", ".xlsx",".doc",".docx",".exe",".msg"];
-//   const newFiles = [];
-
-//   for (let file of selectedFiles) {
-//     const { ext } = path.parse(file.name);
-
-
-//     // Validate file type
-//     if (
-//       (!file.type && !allowedFileExtensions.includes(ext)) ||
-//       (!acceptedFileTypes.includes(file.type) &&
-//         !allowedFileExtensions.includes(ext)) ||
-//       restrictedFileExtensions.includes(ext)
-//     ) {
-//       toast.error(
-//         `Invalid file type for "${file.name}". Only JPG, JPEG, PNG are allowed.`
-//       );
-//       continue;
-//     }
-
-//     const modifiedFilename = `SOP-${file.name}`;
-//     const modifiedFile = new File([file], modifiedFilename, {
-//       type: allowedFileExtensions.includes(ext) ? ext : file.type,
-//       lastModified: file.lastModified,
-//     });
-
-        
-
-// // Check duplicate using the modified filename
-// const annexure = annexures.find((a) => a.letter === annexureLetter);
-// if (annexure.files.some((f) => f.filename === modifiedFilename)) {
-//   toast.error(
-//     `File "${file.name}" already exists in Annexure ${annexureLetter}`
-//   );
-//   continue;
-// }
-
-//     // ✅ Check if adding this file would exceed 5
-//     if (annexure.files.length + newFiles.length >= 5) {
-//       toast.error(`Annexure ${annexureLetter} can only have 5 files. "${file.name}" was skipped.`);
-//       break; // stop adding more
-//     }
-
-//     newFiles.push({
-//       filename: modifiedFile.name,
-//       type: modifiedFile.type,
-//       fileObject: modifiedFile,
-//       filepath: URL.createObjectURL(modifiedFile),
-//     });
-
-//     // Optional: upload to server
-//     // await uploadToServer([modifiedFile]);
-//   }
-
-//   // Add new files to the annexure
-//   if (newFiles.length > 0) {
-//     setAnnexures((prev) =>
-//       prev.map((a) =>
-//         a.letter === annexureLetter
-//           ? { ...a, files: [...a.files, ...newFiles] }
-//           : a
-//       )
-//     );
-//   }
-
-//   setShowLoader(false);
-// };
-// const uploadToClient = async (event, identifier, state, setState) => {
-//   setShowLoader(true);
-//   const selectedFiles = Array.from(event.target.files);
-//   event.target.value = ""; 
-
-//   if (selectedFiles.length === 0) {
-//     setShowLoader(false);
-//     return;
-//   }
-
-//   const allowedFileExtensions = [".img", ".msg"];
-//   const acceptedFileTypes = ["image/jpeg", "image/png", "image/jpg"];
-//   const restrictedFileExtensions = [".xls", ".xlsx",".doc",".docx",".exe",".msg"];
-//   const newFiles = [];
-
-//   for (let file of selectedFiles) {
-//     const { ext } = path.parse(file.name);
-
-//     if (
-//       (!file.type && !allowedFileExtensions.includes(ext)) ||
-//       (!acceptedFileTypes.includes(file.type) &&
-//         !allowedFileExtensions.includes(ext)) ||
-//       restrictedFileExtensions.includes(ext)
-//     ) {
-//       toast.error(`Invalid file type for "${file.name}". Only JPG, JPEG, PNG are allowed.`);
-//       continue;
-//     }
-
-//     const modifiedFilename = `SOP-${file.name}`;
-//     const modifiedFile = new File([file], modifiedFilename, {
-//       type: allowedFileExtensions.includes(ext) ? ext : file.type,
-//       lastModified: file.lastModified,
-//     });
-
-//     // Find the target item (annexure OR process section)
-//     const target = state.find((s) => s.letter === identifier || s.sectionName === identifier);
-
-//     if (target.files.some((f) => f.filename === modifiedFilename)) {
-//       toast.error(`File "${file.name}" already exists in ${identifier}`);
-//       continue;
-//     }
-
-//     if (target.files.length + newFiles.length >= 5) {
-//       toast.error(`${identifier} can only have 5 files. "${file.name}" skipped.`);
-//       break;
-//     }
-
-//     newFiles.push({
-//       filename: modifiedFile.name,
-//       type: modifiedFile.type,
-//       fileObject: modifiedFile,
-//       filepath: URL.createObjectURL(modifiedFile),
-//     });
-//   }
-
-//   if (newFiles.length > 0) {
-//     setState((prev) =>
-//       prev.map((s) =>
-//         (s.letter === identifier || s.sectionName === identifier)
-//           ? { ...s, files: [...s.files, ...newFiles] }
-//           : s
-//       )
-//     );
-//   }
-
-//   setShowLoader(false);
-// };
 
 
 useEffect(() => {
@@ -277,16 +141,29 @@ const handlePreViewFile = (filename, type, filepath) => {
   alert(`Cannot preview this file type: ${type}\nFile: ${filename}`);
 };
 
+
 const removeFile = (annexureLetter, fileIndex) => {
   setAnnexures((prev) =>
-    prev.map((annexure) =>
-      annexure.letter === annexureLetter
-        ? {
-            ...annexure,
-            files: annexure.files.filter((_, idx) => idx !== fileIndex),
-          }
-        : annexure
-    )
+    prev.map((annexure) => {
+      if (annexure.letter === annexureLetter) {
+        const removedFile = annexure.files[fileIndex]; // grab the file being deleted
+
+        // store deleted file (so backend can delete later)
+        setDeletedFiles((prevDeleted) => [
+          ...prevDeleted,
+          {
+            subValue: annexureLetter,
+            value: removedFile.filename, // the old name stored in DB
+          },
+        ]);
+
+        return {
+          ...annexure,
+          files: annexure.files.filter((_, idx) => idx !== fileIndex),
+        };
+      }
+      return annexure;
+    })
   );
 };
 
@@ -316,7 +193,7 @@ const handleAddAnnexure = () => {
   try {
     //code to save images
      const allAnnexureFiles = [];
-    toast.success("All annexure files uploaded and saved successfully!");
+    // toast.success("All annexure files uploaded and saved successfully!");
 
     // Prepare the payload to send to backend
     const payload = {
@@ -329,6 +206,10 @@ const handleAddAnnexure = () => {
     );
     console.log("after insertion: "+response);
   if (response) {
+     if (!response.ok) {
+        toast.error("Something went wrong");
+        return;
+      }
         const jsonRes = await response.json();
         if (jsonRes.id) { 
            const documentId = jsonRes.id;
@@ -399,7 +280,7 @@ const handleAddAnnexure = () => {
             console.log("Roles Data:" + rolesWithDocId);
             console.log("Clause Data:" + clausesWithDocId);
             console.log("Annexure Data:" + clausesWithDocId);
-          
+          try{
           await Promise.all([
               // 👈 wrap it in an array
               ComplianceService.CreateHistory( {histories: historyWithDocId }),
@@ -410,252 +291,470 @@ const handleAddAnnexure = () => {
 
             ]);
 
-          toast.success("Document inserted successfully");
+          toast.success("SOP Document inserted successfully");
+          window.location.href = "/SOPReport";
+           }catch(error){
+            console.error("Error saving SOP document:", error);
+            toast.error("Failed to update SOP document. Please try again.");
+          }
+
         } else {
           toast.error("Error in saving document");
         }
       } else {
-        Router.push(APP_ROUTES.SERVER_ERROR);
+        router.push(APP_ROUTES.SERVER_ERROR); // ✅ fix
       }
   } catch (error) {
     console.error("Save failed:", error);
     toast.error("Error in saving document");
   }
 };
+// new handle edit
 
+// const handleEdit = async () => {
+//   try {
+//     const payload = { ...formData };
+//     const dataToSend = mapPayloadForBackend(payload);
+
+//     const normalizedSOPData = normalizeSOPData(sopData);
+//     const normalizedformData = normalizeFormData(formData);
+//     const normalizedHistory = normalizeHistory(historyData);
+//     const normalizedEscalation = normalizeArray(escalationData);
+//     const normalizedRoles = normalizeArray(rolesData);
+
+//   console.log("original formadata in ANnexure:", normalizedformData);
+// console.log("fetched sop data for editing in Annexure:", JSON.stringify(normalizedSopData, null, 2));
+
+
+//   console.log("original history in ANnexure:", history);
+// console.log("fetched sop data for editing in Annexure:", JSON.stringify(normalizedHistory, null, 2));
+
+
+//   console.log("original clauses in ANnexure:", clauses);
+//   console.log("fetched clausesData for editing in Annexure: ",clauseData);
+
+//     console.log("original escalationRows in ANnexure:", escalationRows);
+// console.log("fetched sop data for editing in Annexure:", JSON.stringify(normalizedEscalation, null, 2));
+
+
+  
+//     console.log("original roles in ANnexure:", roles);
+// console.log("fetched sop data for editing in Annexure:", JSON.stringify(normalizedRoles, null, 2));
+
+
+//       // 🔍 Detect changes between original states and current states
+//     const onlyFormDataChanged =
+//       !isEqual(normalizedformData, normalizedSOPData) &&
+//       isEqual(clauses, clausesData) &&
+//       isEqual(history, normalizedHistory) &&
+//       isEqual(escalationRows, normalizedEscalation) &&
+//       isEqual(roles, normalizedRoles) &&
+//       isEqual(annexures, annexureData);
+//     // ✅ Case 1: only formData changed
+//     console.log("Form Data: ",formData);
+//     console.log("SOP Data: ",sopData)
+//     console.log("onlyFormDataChanged: ",onlyFormDataChanged);
+//     if (onlyFormDataChanged) {
+//       const response = await ComplianceService.UpdateSOP(sopId, dataToSend);
+//       if (!response.ok) {
+//         toast.error("Error in saving SOP Document");
+//         return;
+//       }else{
+//         toast.success("SOP Document updated successfully");
+//         window.location.href = "/SOPReport";
+//       }
+
+//     }else{
+//       // step 1: update main SOP
+//       const response = await ComplianceService.UpdateSOPDocument(sopId, dataToSend);
+//     if (!response.ok) {
+//           toast.error("Error in saving SOP Document");
+//           return;
+//         }
+//       const jsonRes = await response.json();
+//       if (!jsonRes.id) {
+//         toast.error("Error in updating document");
+//         return;
+//       }
+
+//       const documentId = jsonRes.id;
+//       const allAnnexureFiles = [];
+
+//       // step 2: handle annexures
+//       for (let annexure of annexures) {
+//         if (!annexure.files.length) continue;
+
+//         // upload ONLY new files
+//         const newFiles = annexure.files.filter(f => f.fileObject);
+//         if (newFiles.length > 0) {
+//           const uploadedFiles = await uploadToServer(newFiles.map(f => f.fileObject), annexure.letter, documentId);
+//           allAnnexureFiles.push(...uploadedFiles);
+//         }
+
+//         // keep old files as-is (no re-upload)
+//         const oldFiles = annexure.files.filter(f => !f.fileObject);
+//         for (let old of oldFiles) {
+//           allAnnexureFiles.push({
+//             subValue: annexure.letter,
+//             documentId,
+//             value: old.filename,
+//             key: "IMAGE",
+//             status: "ACTIVE",
+//           });
+//         }
+//       }
+
+//       // step 3: handle process section
+//       const processSection = processFiles.find(p => p.sectionName === "Process Explanation");
+//       if (processSection && processSection.files.length > 0) {
+//         const newFiles = processSection.files.filter(f => f.fileObject);
+//         if (newFiles.length > 0) {
+//           const uploadedFiles = await uploadToServer(newFiles.map(f => f.fileObject), "Process Explanation", documentId);
+//           allAnnexureFiles.push(...uploadedFiles);
+//         }
+//         const oldFiles = processSection.files.filter(f => !f.fileObject);
+//         for (let old of oldFiles) {
+//           allAnnexureFiles.push({
+//             subValue: "Process Explanation",
+//             documentId,
+//             value: old.filename,
+//             key: "IMAGE",
+//             status: "ACTIVE",
+//           });
+//         }
+//       }
+
+//       // step 4: send deleted files
+//       if (deletedFiles.length > 0) {
+//         await ComplianceService.deleteAnnexureFiles({
+//         documentId,
+//         files: deletedFiles
+//       });
+//       }
+
+//       try {
+//     await Promise.all([
+//       ComplianceService.UpdateAnnexure(sopId, { details: allAnnexureFiles }),
+//       ComplianceService.UpdateHistory(sopId, { histories: history.map(h => ({ ...h, documentId })) }),
+//       ComplianceService.UpdateEscalations(sopId, { escalations: escalationRows.map(e => ({ ...e, documentId })) }),
+//       ComplianceService.UpdateRoles(sopId, { responsibilities: roles.map(r => ({ ...r, documentId })) }),
+//       ComplianceService.UpdateClauses(sopId, { clauses: clauses.map(c => ({ ...c, documentId })) }),
+//     ]);
+
+  
+//       toast.success("SOP Document updated, and a new version has been saved.");
+//       window.location.href = "/SOPReport";
+//     }catch(error){
+//       console.error("Error updating document:", error);
+//       toast.error("Failed to update document. Please try again.");
+//     }
+//     } //else in case there is change in history,clauses, escalation data and need versioning
+//   } catch (err) {
+//     console.error("Update failed:", err);
+//     toast.error("Error in updating document");
+//   }
+// };
 const handleEdit = async () => {
   try {
-    // Prepare SOP Document payload
-    const payload = {
-      ...formData,
-    };
-
-    const allAnnexureFiles = [];
+    const payload = { ...formData };
     const dataToSend = mapPayloadForBackend(payload);
 
-    // 1️⃣ Update SOP Document first
-    const response = await ComplianceService.UpdateSOPDocument(
-      sopId,   // existing doc id
-      dataToSend
-    );
+    const normalizedSOPData = normalizeSOPData(sopData);
+    const normalizedformData = normalizeFormData(formData);
+    const normalizedHistory = normalizeHistoryData(historyData);
+    const normalizedEscalation = normalizeEscalationData(escalationData);
+    const normalizedRoles = normalizeRolesData(rolesData);
+    const normalizeOriginalClausesData=normalizeClausesData(clauses);
+    const normalizeClauses =normalizeClausesData(clauseData);
 
-    if (response) {
-      const jsonRes = await response.json();
+    // const normalizeOriginalAnnexureData = annexures;
+    const normalizeAnnexureDataa = normalizeAnnexureData(annexureData);
 
-      if (jsonRes.id) {
-        const documentId = jsonRes.id;
+    console.log("original formadata in ANnexure:", normalizedformData);
+    console.log("fetched sop data for editing in Annexure:", JSON.stringify(normalizedSOPData, null, 2));
 
-    for (let annexure of annexures) {
-      if (!annexure.files.length) continue;
+    console.log("original history in ANnexure:",JSON.stringify(history, null, 2));
+    console.log("fetched history data for editing in Annexure:", JSON.stringify(normalizedHistory, null, 2));
 
-      // Build array of File objects for upload
-      const filesForUpload = await Promise.all(
-        annexure.files.map(async f => {
-          if (f.fileObject) {
-            // 🆕 case: new file picked by user → already a File object
-            return f.fileObject;
-          } else {
-            // 🧾 case: old file (only filename known)
-            // fetch it again from storage/FTP and convert to File
-            const response = await fetch(`${FTP_Constants.BASE_URL}/${f.filename}`);
-            const blob = await response.blob();
-            return new File([blob], f.filename, { type: f.type || "application/octet-stream" });
-          }
-        })
-      );
+    console.log("original clauses in ANnexure:", normalizeOriginalClausesData);
+    console.log("fetched clausesData for editing in Annexure: ", normalizeClauses);
 
-      // Upload all (old + new together)
-      const uploadedFiles = await uploadToServer(filesForUpload, annexure.letter,documentId);
+    console.log("original escalationRows in ANnexure:", JSON.stringify(escalationRows, null, 2));
+    console.log("fetched escalation data for editing in Annexure:", JSON.stringify(normalizedEscalation, null, 2));
 
-      allAnnexureFiles.push(...uploadedFiles);
+    console.log("original roles in ANnexure:", JSON.stringify(roles, null, 2));
+    console.log("fetched roles data for editing in Annexure:", JSON.stringify(normalizedRoles, null, 2));
+
+        console.log("original Annexure in ANnexure:", JSON.stringify(annexures, null, 2));
+    console.log("fetched Annexure data for editing in Annexure:", JSON.stringify(normalizeAnnexureDataa, null, 2));
+
+    // 🔍 Detect changes between original states and current states
+    const onlyFormDataChanged =
+      !isEqual(normalizedformData, normalizedSOPData) &&
+      isEqual(normalizeOriginalClausesData, normalizeClauses) &&
+      isEqual(history, normalizedHistory) &&
+      isEqual(escalationRows, normalizedEscalation) &&
+      isEqual(roles, normalizedRoles) &&
+      isEqual(annexures, normalizeAnnexureDataa);
+
+    const nothingChanged =
+      isEqual(normalizedformData, normalizedSOPData) &&
+      isEqual(normalizeOriginalClausesData, normalizeClauses) &&
+      isEqual(history, normalizedHistory) &&
+      isEqual(escalationRows, normalizedEscalation) &&
+      isEqual(roles, normalizedRoles) &&
+      isEqual(annexures, normalizeAnnexureDataa);
+
+    // ✅ Case 1: only formData changed
+// Log each comparison
+console.log("Form Data === SOP Data:", _.isEqual(normalizedformData, normalizedSOPData));
+console.log("History === History Data:", _.isEqual(history, normalizedHistory));
+console.log("Escalation === Escalation Data:", _.isEqual(escalationRows, normalizedEscalation));
+console.log("clauses === Clauses Data:", _.isEqual(normalizeOriginalClausesData, normalizeClauses));
+console.log("Roles === Roles Data:", _.isEqual(roles, normalizedRoles));
+console.log("annexure === annexure Data:", _.isEqual(annexures, normalizeAnnexureDataa));
+
+    console.log("onlyFormDataChanged: ", onlyFormDataChanged);
+
+    if(nothingChanged){
+      toast.warning("Noting has been updated");
+      return;
     }
-
-    console.log("Updated process files are:::", processFiles);
-
-      let uploadedProcessFiles = []; // declare here
-     // Upload Process Explanation files in same manner
-const processSection = processFiles.find(p => p.sectionName === "Process Explanation");
-
-if (processSection && processSection.files.length > 0) {
-  const filesForUpload = await Promise.all(
-    processSection.files.map(async f => {
-      if (f.fileObject) {
-        return f.fileObject; // new file
+    else if (onlyFormDataChanged) {
+      const response = await ComplianceService.UpdateSOP(sopId, dataToSend);
+      if (!response.ok) {
+        toast.error("Error in saving SOP Document");
+        return;
       } else {
-        const response = await fetch(`${FTP_Constants.BASE_URL}/${f.filename}`);
-        const blob = await response.blob();
-        return new File([blob], f.filename, { type: f.type || "application/octet-stream" });
-      }
-    })
-  );
-
-  const uploadedProcessFiles = await uploadToServer(filesForUpload, "Process Explanation", documentId);
-  allAnnexureFiles.push(...uploadedProcessFiles);
-
-}
-
-  // Append to main DB array
-
-    console.log("Files ready for DB:", allAnnexureFiles);
-
-          const annexureWithDocId = allAnnexureFiles.map((h) => ({
-          ...h,
-          documentId,
-        }));
-        // 2️⃣ Append documentId + keep existing ids
-        const historyWithDocId = history.map((h) => ({
-          ...h,
-          documentId,
-        }));
-
-        const escalationsWithDocId = escalationRows.map((e) => ({
-          ...e,
-          documentId,
-        }));
-
-        const rolesWithDocId = roles.map((r) => ({
-          ...r,
-          documentId,
-        }));
-
-        const clausesWithDocId = clauses.map((c) => ({
-          ...c,
-          documentId,
-        }));
-
-        console.log("History Data (Update):", historyWithDocId);
-        console.log("Escalation Data (Update):", escalationsWithDocId);
-        console.log("Roles Data (Update):", rolesWithDocId);
-        console.log("Clause Data (Update):", clausesWithDocId);
-        console.log("Annexure Data (Update):", annexureWithDocId);
-
-
-        // 3️⃣ Call update APIs in parallel
-        await Promise.all([
-          ComplianceService.UpdateHistory(sopId, { histories: historyWithDocId }),
-          ComplianceService.UpdateEscalations(sopId, { escalations: escalationsWithDocId }),
-          ComplianceService.UpdateRoles(sopId, { responsibilities: rolesWithDocId }),
-          ComplianceService.UpdateClauses(sopId, { clauses: clausesWithDocId }),
-          ComplianceService.UpdateAnnexure(sopId, { details: annexureWithDocId }),
-          
-        ]);
-
-        toast.success("Document updated successfully");
-      } else {
-        toast.error("Error in updating document");
+        toast.success("SOP Document updated successfully");
+        window.location.href = "/SOPReport";
       }
     } else {
-      Router.push(APP_ROUTES.SERVER_ERROR);
-    }
-  } catch (error) {
-    console.error("Update failed:", error);
+      // step 1: update main SOP
+      const response = await ComplianceService.UpdateSOPDocument(sopId, dataToSend);
+      if (!response.ok) {
+        toast.error("Error in saving SOP Document");
+        return;
+      }
+      const jsonRes = await response.json();
+      if (!jsonRes.id) {
+        toast.error("Error in updating document");
+        return;
+      }
+
+      const documentId = jsonRes.id;
+      const allAnnexureFiles = [];
+
+      // step 2: handle annexures
+      for (let annexure of annexures) {
+        if (!annexure.files.length) continue;
+
+        // upload ONLY new files
+        const newFiles = annexure.files.filter(f => f.fileObject);
+        if (newFiles.length > 0) {
+          const uploadedFiles = await uploadToServer(newFiles.map(f => f.fileObject), annexure.letter, documentId);
+          allAnnexureFiles.push(...uploadedFiles);
+        }
+
+        // keep old files as-is (no re-upload)
+        const oldFiles = annexure.files.filter(f => !f.fileObject);
+        for (let old of oldFiles) {
+          allAnnexureFiles.push({
+            subValue: annexure.letter,
+            documentId,
+            value: old.filename,
+            key: "IMAGE",
+            status: "ACTIVE",
+          });
+        }
+      }
+
+      // step 3: handle process section
+      const processSection = processFiles.find(p => p.sectionName === "Process Explanation");
+      if (processSection && processSection.files.length > 0) {
+        const newFiles = processSection.files.filter(f => f.fileObject);
+        if (newFiles.length > 0) {
+          const uploadedFiles = await uploadToServer(newFiles.map(f => f.fileObject), "Process Explanation", documentId);
+          allAnnexureFiles.push(...uploadedFiles);
+        }
+        const oldFiles = processSection.files.filter(f => !f.fileObject);
+        for (let old of oldFiles) {
+          allAnnexureFiles.push({
+            subValue: "Process Explanation",
+            documentId,
+            value: old.filename,
+            key: "IMAGE",
+            status: "ACTIVE",
+          });
+        }
+      }
+
+      // step 4: send deleted files
+      if (deletedFiles.length > 0) {
+        await ComplianceService.deleteAnnexureFiles({
+          documentId,
+          files: deletedFiles
+        });
+      }
+
+      try {
+        await Promise.all([
+          ComplianceService.UpdateAnnexure(sopId, { details: allAnnexureFiles }),
+          ComplianceService.UpdateHistory(sopId, { histories: history.map(h => ({ ...h, documentId })) }),
+          ComplianceService.UpdateEscalations(sopId, { escalations: escalationRows.map(e => ({ ...e, documentId })) }),
+          ComplianceService.UpdateRoles(sopId, { responsibilities: roles.map(r => ({ ...r, documentId })) }),
+          ComplianceService.UpdateClauses(sopId, { clauses: clauses.map(c => ({ ...c, documentId })) }),
+        ]);
+
+        toast.success("SOP Document updated, and a new version has been saved.");
+        // window.location.href = "/SOPReport";
+      } catch (error) {
+        console.error("Error updating document:", error);
+        toast.error("Failed to update document. Please try again.");
+      }
+    } //else in case there is change in history,clauses, escalation data and need versioning
+  } catch (err) {
+    console.error("Update failed:", err);
     toast.error("Error in updating document");
   }
 };
-/**
- * Upload files to server and return metadata
- * @param {File[]} files Array of File objects
- * @param {string} annexureLetter Letter of the annexure
- * @returns {Promise<Object[]>} Array of uploaded file info
- */
-// const uploadToServer = async (files, annexureLetter) => {
-//   const uploadedFiles = [];
 
-//   for (let i = 0; i < files.length; i++) {
-//     const file = files[i];
-//     const body = new FormData();
-//     body.append("file", file);
-//     body.append("subFolder", FTP_Constants.NTL_COMPLIANCE_SOP_FOLDER);
+// Fixed normalization functions
+function normalizeFormData(formData) {
+  return {
+    sop_name: formData.sop_name || "",
+    version: formData.version || "",
+    dateOfApproval: formData.dateOfApproval || "",
+    documentobjective: formData.documentobjective || "",
+    ownerDepartment: formData.ownerDepartment?.value || formData.ownerDepartment || "",
+    subDepartment: formData.subDepartment?.value || formData.subDepartment || "",
+    sopType: formData.sopType?.value || formData.sopType || "",
+    infoClassification: formData.infoClassification?.value || formData.infoClassification || "",
+    criticalityLevel: formData.criticalityLevel?.value || formData.criticalityLevel || "",
+    manualRequired: formData.manualRequired?.value || formData.manualRequired || "",
+    preparedBy: formData.preparedBy?.value || formData.preparedBy || "",
+    city: formData.city?.value || formData.city || "",
+    approvedBy: Array.isArray(formData.approvedBy)
+      ? formData.approvedBy.map(a => a.value || a).join(", ")
+      : formData.approvedBy || "",
+    stakeholders: Array.isArray(formData.stakeholders)
+      ? formData.stakeholders.map(s => s.value || s).join(", ")
+      : formData.stakeholders || "",
+    reviewedStakeholders: Array.isArray(formData.reviewedStakeholders)
+      ? formData.reviewedStakeholders.map(r => r.value || r).join(", ")
+      : formData.reviewedStakeholders || "",
+  };
+}
 
-//     const ext = file.name.split(".").pop();
+function normalizeSOPData(sopData) {
+  // Create a new object with only the fields we want to compare
+  return {
+    sop_name: sopData.sop_name || "",
+    version: sopData.version || "",
+    dateOfApproval: sopData.dateOfApproval || "",
+    documentobjective: sopData.documentobjective || "",
+    ownerDepartment: sopData.ownerDepartment || "",
+    subDepartment: sopData.subDepartment || "",
+    sopType: sopData.sop_type || "",
+    infoClassification: sopData.informationClassification || "",
+    criticalityLevel: sopData.criticalityLevel || "",
+    manualRequired: sopData.manualRequired || "",
+    preparedBy: sopData.preparedBy || "",
+    city: sopData.city || "",
+    approvedBy: sopData.approvedBy || "",
+    stakeholders: sopData.stakeholders || "",
+    reviewedStakeholders: sopData.reviewed_stakeholders || "",
+  };
+}
 
-//     try {
-//       const response = await fetch(FTP_Constants.UPLOAD_URL, {
-//         method: "POST",
-//         enctype: "multipart/form-data",
-//         body,
-//       });
+function normalizeHistoryData(historyArr = []) {
+  return historyArr.map(h => ({
+    version: h.version || "",
+    preparedBy: h.preparedBy || "",
+    approvedBy: h.approvedBy || "",
+    changes: h.changes || "",
+    datetime: h.datetime ? new Date(h.datetime).toISOString().split("T")[0] : "",
+    // ? new Date(h.datetime).toISOString().split("T")[0] : "",
+  }));
+}
 
-//       const res = await response.json();
+function normalizeEscalationData(escalationArr = []) {
+  return escalationArr.map(e => ({
+    level: e.level || "",
+    duration: e.duration || "",
+    designation: e.designation || "",
+  }));
+}
+function normalizeRolesData(rolesArr = []) {
+  return rolesArr.map(r => ({
+    dept: r.dept || "",
+    responsibility: r.responsibility || "",
+  }));
+}
 
-//       if (res && res.status === "SUCCESS") {
-//         toast.success(`Uploaded: ${file.name}`);
+function normalizeClausesData(clausesArr) {
+  if (!Array.isArray(clausesArr)) return [];
+  
+  return clausesArr.map(c => {
+    return {
+      id:c.id,
+     seq: c.seq != null ? String(c.seq) : "",
+      text: c.text.trim() || "",
+      sectionName: c.sectionName || "",
+      parent_id: c.parent_id || null,
+    };
+  });
+}
 
-//         const filename = res.data?.[0]?.split("budgetapproval/")[1];
+function normalizeAnnexureData(fetchedData) {
+ if (!Array.isArray(fetchedData)) return [];
 
-//         uploadedFiles.push({
-//           subValue: annexureLetter,
-//           documentId: sopId,
-//           value: filename,
-//           key: 'IMAGE',
-//           status:'ACTIVE',
-//         });
-//       } else {
-//         toast.error(`Failed to upload: ${file.name}`);
-//       }
-//     } catch (err) {
-//       console.error(err);
-//       toast.error(`Error uploading file: ${file.name}`);
-//     }
-//   }
+  const grouped = {};
 
-//   return uploadedFiles;
-// };
-// const uploadToServer = async (files, identifier, sopId) => {
-//   const uploadedFiles = [];
+  fetchedData.forEach(item => {
+    const letter = item.subValue || "";
+    if (!grouped[letter]) grouped[letter] = [];
 
-//   for (let file of files) {
-//     const body = new FormData();
-//     body.append("file", file);
-//     body.append("subFolder", FTP_Constants.NTL_COMPLIANCE_SOP_FOLDER);
+    grouped[letter].push({
+      filename: item.value,
+      type: "image/png", // you can enhance this if type is stored in DB
+      filepath: `https://storage.nayatel.com/views/crmViews/storage/budgetapproval/${item.value}`,
+      fileObject: null
+    });
+  });
 
-//     try {
-//       const response = await fetch(FTP_Constants.UPLOAD_URL, {
-//         method: "POST",
-//         enctype: "multipart/form-data",
-//         body,
-//       });
+  return Object.entries(grouped).map(([letter, files]) => ({
+    letter,
+    files
+  }));
+}
 
-//       const res = await response.json();
-
-//       if (res?.status === "SUCCESS") {
-//         toast.success(`Uploaded: ${file.name}`);
-
-//         const filename = res.data?.[0]?.split("budgetapproval/")[1];
-
-//         uploadedFiles.push({
-//           subValue: identifier,  // annexureLetter OR sectionName
-//           documentId: sopId,
-//           value: filename,
-//           key: 'IMAGE',
-//           status: 'ACTIVE',
-//         });
-//       } else {
-//         toast.error(`Failed to upload: ${file.name}`);
-//       }
-//     } catch (err) {
-//       console.error(err);
-//       toast.error(`Error uploading file: ${file.name}`);
-//     }
-//   }
-
-//   return uploadedFiles;
-// };
-
+//new handle edit
 
   return (
     <>
- {showLoader && (
-        <div className="loader-overlay">
-          <CircularLoader />
-        </div>
-      )}
-<div className="mb-4 mt-5">
-  <h6 className="fw-bold mb-3">
-    {formType === "service" ? "" : "14. "} Annexures
-  </h6>
+<div className="p-3 mb-4 mt-5">
 
-  <button
+      <div className="mb-2 ml-1 d-flex">
+           <h5 className="fw-bold mb-3">
+    {formType === "service" ? "" : "14. "} Annexures
+  </h5>
+
+        <button
+        type="button"
+        className="btn custom-bg-color ml-3"
+      style={{    padding: "1px 7px 1px 7px", color:"white", height:"25px" }}
+        onClick={handleAddAnnexure}
+          disabled={
+    annexures.length > 0 &&
+    annexures[annexures.length - 1]?.letter?.charCodeAt(0) >=
+      "K".charCodeAt(0)
+  }
+      >
+        <i className="fa fa-plus"></i>
+      </button>
+      </div>
+  {/* <button
     className="btn btn-primary px-4"
     style={{
       background: "rgb(40, 78, 147)",
@@ -671,7 +770,7 @@ if (processSection && processSection.files.length > 0) {
   }
     >
     + Add Annexure
-  </button>
+  </button> */}
 
   {annexures.map((annexure, index) => (
     <div
@@ -751,7 +850,6 @@ if (processSection && processSection.files.length > 0) {
       </div>
     </div>
   ))}
-</div>
 
       {/* Navigation Buttons */}
       <div className="mt-4 d-flex justify-content-between">
@@ -762,6 +860,8 @@ if (processSection && processSection.files.length > 0) {
          {sopId ? "Update" : "Submit"}
         </button>
       </div>
+</div>
+
     </>
   );
 }
@@ -770,63 +870,65 @@ function mapPayloadForBackend(payload) {
   return {
     sop_name: payload.sop_name,
     sop_type: payload.sopType.value,
+    docType: payload.docType.value,
     ownerDepartment: payload.ownerDepartment.value,
     stakeholders: payload.stakeholders.map(s => s.value).join(', '),
     subDepartment: payload.subDepartment.value,
     city: payload.city.value,
     version: payload.version,
-    criticalityLevel: payload.criticalityLevel,
+    criticalityLevel: payload.criticalityLevel?.value,
     dateOfApproval: payload.dateOfApproval,
     preparedBy: payload.preparedBy.value,
     reviewed_stakeholders: payload.reviewedStakeholders.map(s => s.value).join(', '),
-    // approved_by: payload.approvedBy || '',
+    approvedBy: payload.approvedBy.map(s => s.value).join(', '),
   informationClassification: payload.infoClassification?.value,
     manualRequired: payload.manualRequired?.value,
     documentobjective: payload.documentobjective,
   };
 }
 
-function diffAnnexures(originalData, currentState) {
-  // --- Normalize original (backend)
-  const originalGrouped = originalData.reduce((acc, item) => {
-    if (!acc[item.subValue]) acc[item.subValue] = [];
-    acc[item.subValue].push(item.value); // only filename
-    return acc;
-  }, {});
+// function normalizeFormData(formData) {
 
-  // --- Normalize current (UI state)
-  const currentGrouped = currentState.reduce((acc, annex) => {
-    acc[annex.letter] = annex.files.map(f => f.filename);
-    return acc;
-  }, {});
+//   return {
+//     ...cleaned,
+//     ownerDepartment: formData.ownerDepartment?.value || "",
+//     subDepartment: formData.subDepartment?.value || "",
+//     sopType: formData.sopType?.value || "",
+//     infoClassification: formData.infoClassification?.value || "",
+//     criticalityLevel: formData.criticalityLevel?.value || "",
+//     manualRequired: formData.manualRequired?.value || "",
+//     approvedBy: Array.isArray(formData.approvedBy)
+//       ? formData.approvedBy.map(a => a.value).join(", ")
+//       : formData.approvedBy || "",
+//     stakeholders: Array.isArray(formData.stakeholders)
+//       ? formData.stakeholders.map(s => s.value).join(", ")
+//       : formData.stakeholders || "",
+//     reviewedStakeholders: Array.isArray(formData.reviewedStakeholders)
+//       ? formData.reviewedStakeholders.map(r => r.value).join(", ")
+//       : formData.reviewedStakeholders || "",
+//   };
+// }
 
-  let toAdd = [];
-  let toDelete = [];
+// function normalizeSOPData(sopData){
+//  // remove unwanted fields first
+//   const cleaned = _.omit(sopData, ["id", "createdAt", "updatedAt", "datetime"]);
+//   return cleaned;
+// }
 
-  // --- Check per annexure
-  const allLetters = new Set([
-    ...Object.keys(originalGrouped),
-    ...Object.keys(currentGrouped),
-  ]);
+// function normalizeHistory(historyArr) {
+//   return historyArr.map(item => {
+//     const cleaned = _.omit(item, ["id"]); // remove id
+//     return {
+//       ...cleaned,
+//       // normalize datetime (optional, depends on your use case)
+//       datetime: cleaned.datetime?.split("T")[0] || cleaned.datetime,
+//     };
+//   });
+// }
 
-  allLetters.forEach(letter => {
-    const origFiles = originalGrouped[letter] || [];
-    const currFiles = currentGrouped[letter] || [];
-
-    // files to add → in current but not in original
-    currFiles.forEach(f => {
-      if (!origFiles.includes(f)) {
-        toAdd.push({ letter, filename: f });
-      }
-    });
-
-    // files to delete → in original but not in current
-    origFiles.forEach(f => {
-      if (!currFiles.includes(f)) {
-        toDelete.push({ letter, filename: f });
-      }
-    });
-  });
-
-  return { toAdd, toDelete };
-}
+// function normalizeArray(data) {
+//   return data.map(item => {
+//     // remove id and datetime entirely
+//     return _.omit(item, ["id", "datetime"]);
+//   });
+// }

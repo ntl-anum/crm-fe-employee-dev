@@ -19,6 +19,29 @@ export default function PreviewPage() {
   const [rolesData, setRolesData] = useState(null);
   const [clauseData, setClauseData] = useState(null);
   const [annexures, setAnnexures] = useState(null);
+  const [processFiles, setProcessFiles] = useState(null);
+
+
+  
+  // --- HANDLE REFRESH ---
+useEffect(() => {
+  const fromReportPage = URLParams?.fromReport === "true"; // check query param
+  const visitedBefore = sessionStorage.getItem("previewVisited");
+
+  if (!fromReportPage && visitedBefore) {
+    // User refreshed this page directly → redirect to report
+    window.location.href = "/SOPReport";
+  } else {
+    // First load or coming from report page
+    sessionStorage.setItem("previewVisited", "true");
+  }
+
+  // Optional cleanup
+  return () => {
+    sessionStorage.removeItem("previewVisited");
+  };
+}, [URLParams]);
+
 
   useEffect(() => {
     if (router.isReady && URLParams?.id) {
@@ -42,6 +65,11 @@ export default function PreviewPage() {
 
           const data6 = await ComplianceService.getAnnexureById(URLParams.id);
           setAnnexures((await data6.json()).data);
+
+          const data7 = await ComplianceService.getProcessImages(URLParams.id);
+          setProcessFiles((await data7.json()).data)
+          console.log("prcess files are: ",processFiles);
+
         } catch (err) {
           console.error("Error fetching preview data:", err);
         }
@@ -63,7 +91,8 @@ export default function PreviewPage() {
           height: 'calc(100vh - 100px)', 
           display: 'flex', 
           flexDirection: 'column',
-          minHeight: '800px'
+          minHeight: '800px',
+          padding: '21px'
         }}
       >
         {/* Header with Download Button and Title */}
@@ -89,22 +118,14 @@ export default function PreviewPage() {
                   escalationData={escalationData}
                   clauseData={clauseData}
                   annexures={annexures}
+                  processFiles={processFiles}
                 />
               }
               fileName="SOP_Compliance_Report.pdf"
             >
               {({ loading }) => (
                 <button 
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#2563eb',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
+                 className="btn custom-bg-color"
                   onMouseEnter={(e) => e.target.style.backgroundColor = '#1d4ed8'}
                   onMouseLeave={(e) => e.target.style.backgroundColor = '#2563eb'}
                 >
@@ -136,6 +157,7 @@ export default function PreviewPage() {
                   escalationData={escalationData}
                   clauseData={clauseData}
                   annexures={annexures}
+                  processFiles={processFiles}
                 />
               }
             >

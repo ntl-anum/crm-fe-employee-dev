@@ -6,7 +6,8 @@ import { getOperatorFromCookie } from "@/helpers/cookie-parser";
 import PanelHeading from "../../components/PanelHeading";
 import Edit from "../../public/dist/img/Edit.svg";
 import Trash from "../../public/dist/img/Trash.svg";
-import View from "../../public/dist/img/eye-open.png";
+import ViewIcon from "../../public/dist/img/View.svg";
+import copyIcon from "/public/dist/img/Copy.svg";
 import PrimaryModal from "@/components/Model/PrimaryModal";
 import Select from "react-select";
 import ReactTable from "../../components/Table/ReactTable";
@@ -21,6 +22,9 @@ import { colourStyles } from "@/components/SelectStyleComponent";
 import { useRouter } from "next/navigation";
 import useURLParams from "@/hooks/useURLParams";
 import { encryptData } from "@/helpers/encrypt";
+import { BlobProvider } from "@react-pdf/renderer";
+import PreviewPDF from "@/page-components/ESOP/previewPDF";
+// import { ComplianceService } from "@/services/ComplianceService/ComplianceService";
 
 export default function SOPReport() {
 
@@ -31,7 +35,44 @@ export default function SOPReport() {
   const [processFiles, setProcessFiles] = useState([]);
   const URLParams = useURLParams();
   const router = useRouter();
+  const [deleteModal, setDeleteModal] = useState({
+    show: false,
+    sop_name: null,
+  });
 
+   const handleDel = (del_name = null) => {
+    setDeleteModal({
+      show: !deleteModal.show,
+      sop_name: del_name,
+    });
+  };
+
+    const deleteFun = async () => {
+      try {
+        // setShowLoader(true);
+        const response = await ComplianceService.deleteSOPByName(deleteModal.sop_name);
+        if (response) {
+          const jsonRes = await response.json();
+  
+          if (jsonRes.status === "SUCCESS") {
+            setTableDataState(
+              tableDataState.filter((row) => row.col_sop !== deleteModal.sop_name)
+            );
+            toast.success(jsonRes.message);
+          } else {
+            toast.error(jsonRes.message);
+          }
+        } else {
+          Router.push(APP_ROUTES.SERVER_ERROR);
+        }
+        // setShowLoader(false);
+        handleDel();
+      } catch (error) {
+        console.log(error);
+        Router.push(APP_ROUTES.SERVER_ERROR);
+      }
+    };
+  
     const initialOptionsArray = [
     { value: "", label: "Please Select...", isDisabled: true },
   ];
@@ -122,6 +163,17 @@ const handleSelectChange = (fieldName) => (selectedOption) => {
            {
           Header: "SOP",
           accessor: "col_sop",
+           Cell: ({ value }) => (
+    <div style={{ minWidth: "120px", whiteSpace: "normal" }}>{value}</div>
+  ),
+        },
+                  {
+          Header: "SOP Type",
+          accessor: "col_sop_type",
+        },
+                  {
+          Header: "DOC Type",
+          accessor: "col_doc_type",
         },
         {
           Header: "Sub Department",
@@ -186,25 +238,31 @@ const prepareTableData = async () => {
              id: element.id,
              col_id: element.id || 'N/A',
              col_sop: element.sop_name || 'N/A',
+             col_sop_type: element.sop_type || 'N/A',
+             col_doc_type: element.doc_type || 'N/A',
             col_dept_name: element.owner_department || 'N/A',
             col_version_name: element.version || 'N/A',
             col_stakeholders: element.stakeholders || 'N/A',
             col_city: element.city || 'N/A',
             col_criticality: element.criticality_level || 'N/A',
-            col_approval: element.date_of_approval? new Date(element.date_of_approval).toLocaleString() : "-",
+            col_approval: element.date_of_approval? new Date(element.date_of_approval).toLocaleDateString() : "-",
             col_reviewed_stakeholder: element.reviewed_stakeholders || 'N/A',
             col_preparedBy: element.prepared_by || 'N/A',
             col_actions: (
             <div style={{ whiteSpace: "nowrap" }}>
-              <a style={{ cursor: "pointer" }} onClick={() => handleEdit(element.id)}>
+              <a style={{ cursor: "pointer" }} title="Edit SOP" className="text-dark" onClick={() => handleEdit(element.id)}>
                 <Image src={Edit} alt="Edit" width={20} height={20} />
               </a>
                   &nbsp;
-              <a style={{ cursor: "pointer" }}>
-                <Image src={View} alt="Preview" width={20} height={20} onClick={() => openTableModal(element.sop_name)}/>
+               <a style={{ cursor: "pointer" }} title="View SOP"  className="text-primary" onClick={() => handlePreview(element.id)}>
+                <Image src={ViewIcon} alt="Preview" width={15} height={15} />
+              </a>
+               &nbsp;
+              <a style={{ cursor: "pointer" }} title="View Versions" className="text-primary" onClick={() => openTableModal(element.sop_name)}>
+                <Image src={copyIcon} alt="Preview" width={15} height={15} />
               </a>
               &nbsp;
-              <a style={{ cursor: "pointer" }} onClick={() => handleDel(element.id)}>
+              <a style={{ cursor: "pointer" }} title="Delete SOP" onClick={() => handleDel(element.sop_name)}>
                 <Image src={Trash} alt="Delete" width={20} height={20} />
               </a>
             </div>
@@ -234,11 +292,76 @@ const prepareTableData = async () => {
      console.log("Preview id is as follow: ",id);
    Router.push(
     `/ESOP/Preview?en=${encryptData(
-      `id=${id}`, 
+      `id=${id}&fromReport=true`, 
       process.env.ENCRYPT_KEY
     )}`
   );
   }
+//   const handlePreview = async (id) => {
+//   try {
+//     console.log("Preview id is:", id);
+
+//     // Fetch all required SOP data
+//     const data1 = await ComplianceService.getSOPDataById(id);
+//     const sopData = (await data1.json()).data;
+
+//     const data2 = await ComplianceService.getHistoryById(id);
+//     const historyData = (await data2.json()).data;
+
+//     const data3 = await ComplianceService.getEscalationById(id);
+//     const escalationData = (await data3.json()).data;
+
+//     const data4 = await ComplianceService.getRolesById(id);
+//     const rolesData = (await data4.json()).data;
+
+//     const data5 = await ComplianceService.getClausesById(id);
+//     const clauseData = (await data5.json()).data;
+
+//     const data6 = await ComplianceService.getAnnexureById(id);
+//     const annexures = (await data6.json()).data;
+
+//     const data7 = await ComplianceService.getProcessImages(id);
+//     const processFiles = (await data7.json()).data;
+
+//     // Open PDF in new tab
+//     openPDFInNewTab({
+//       sop: sopData,
+//       historyData,
+//       escalationData,
+//       rolesData,
+//       clauseData,
+//       annexures,
+//       processFiles,
+//     });
+//   } catch (err) {
+//     console.error("Error generating PDF preview:", err);
+//   }
+// };
+
+
+
+// // data contains sop, historyData, rolesData, escalationData, clauseData, annexures, processFiles
+//  const openPDFInNewTab = (data) => {
+//   const blobProvider = new BlobProvider({
+//     document: (
+//       <PreviewPDF
+//         sop={data.sop}
+//         historyData={data.historyData}
+//         rolesData={data.rolesData}
+//         escalationData={data.escalationData}
+//         clauseData={data.clauseData}
+//         annexures={data.annexures}
+//         processFiles={data.processFiles}
+//       />
+//     ),
+//   });
+
+//   blobProvider.toBlob().then(({ blob }) => {
+//     const url = URL.createObjectURL(blob);
+//     window.open(url, "_blank"); // opens PDF in new tab
+//   });
+// };
+
 
    const [tableModal, setTableModal] = useState({ show: false, data: [] });
 
@@ -278,10 +401,9 @@ const TableRow = React.memo(({ row }) => (
     <td>{row.status}</td>
     <td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : "-"}</td>
      <td className="text-center">
-     <a style={{ cursor: "pointer" }}>
-                <Image src={View} alt="Preview" width={20} height={20} onClick={() => handlePreview(row.id)}   // ✅ now it runs only on click
-                />
-              </a>
+     <a style={{ cursor: "pointer" }} onClick={() => handlePreview(row.id)}>
+      <Image src={ViewIcon} height={17} width={17}/>
+    </a>
     </td>
   </tr>
 ));
@@ -290,7 +412,7 @@ const TableBody = React.memo(({ data }) => {
   if (!data || data.length === 0) {
     return (
       <tr>
-        <td colSpan={4} className="text-center">
+        <td colSpan={5} className="text-center">
           No data found
         </td>
       </tr>
@@ -300,6 +422,29 @@ const TableBody = React.memo(({ data }) => {
 });
   return(
   <Layout>
+    
+            <PrimaryModal isOpenProp={deleteModal.show}>
+              <div style={{ margin: "1rem 15px 2rem 15px", padding: "1rem 12rem" }}>
+                <div className="d-flex justify-content-center">
+                  <img src="dist/img/cross-icon.svg" alt="delete icon" />
+                </div>
+                <div className="d-flex justify-content-center mt-4">
+                  <h5 className="font-16">Are you sure you want to delete?</h5>
+                </div>
+                <div className="mt-3 d-flex justify-content-center">
+                  <button
+                    className="btn btn-outline btn-secondary text-dark px-3 mr-1"
+                    onClick={handleDel}
+                  >
+                    Cancel
+                  </button>
+                  &nbsp;
+                  <button className="btn btn-danger px-3" onClick={deleteFun}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </PrimaryModal>
   <PrimaryModal isOpenProp={tableModal.show} onClose={closeTableModal}>
         <div className="modal-content" style={{ padding: "1rem", borderRadius: "0.3rem" }}>
           {/* Modal Header */}
@@ -340,6 +485,7 @@ const TableBody = React.memo(({ data }) => {
         </div>
       </PrimaryModal>
 
+ 
       <div style={{ padding: "24px 24px" }}>
         <div className="panel panel-inverse card-view">
           <PanelHeading text="Genrate Complaince Report" />
